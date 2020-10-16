@@ -14,6 +14,10 @@ import battlecode.common.*;
 
 public class Landscaper {
     // data members
+    static int MaxSenseRadius = 20;
+    static Team myTeam;
+
+
     // functions
     /*
      - rc.digDirt() / canDigDirt

@@ -18,6 +18,7 @@ public strictfp class RobotPlayer {
 
     static int turnCount;
     static int minerCount;
+    static MapLocation locationHQ = new MapLocation(35, 26);
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -63,45 +64,87 @@ public strictfp class RobotPlayer {
     }
 
     static void runHQ() throws GameActionException {
-        while (minerCount < 3){
+
+        while (minerCount < 7){
             Direction dir = randomDirection();
             if (tryBuild(RobotType.MINER, dir) == true)
                 ++minerCount;
-
         }
-
-
 
     }
 
     static void runMiner() throws GameActionException {
-        tryBlockchain();
-        tryMove(randomDirection());
-//        if (tryMove(randomDirection()))
-//            System.out.println("I moved!");
-//        for (Direction dir : directions)
-//            if (tryMine(dir))
-//                System.out.println("I mined soup! " + rc.getSoupCarrying());
+//        tryBlockchain();
+        for (Direction dirs : directions)
+            tryBuild(RobotType.DESIGN_SCHOOL, dirs);
+        Direction dir = randomDirection();
+        if (tryMove(dir))
+            System.out.println("I moved to the " + dir);
+//
         MapLocation[] soupLocations = rc.senseNearbySoup(34);
         for (MapLocation soup : soupLocations) {
             if (rc.getLocation().isAdjacentTo(soup)) {
-                rc.setIndicatorDot(rc.getLocation(), 10, 0, 0);
-                rc.mineSoup(rc.getLocation().directionTo(soup));
+                tryMine(rc.getLocation().directionTo(soup));
+            }
+            else {
+                tryMove(dir.opposite());
             }
         }
-        if (tryMove(randomDirection()))
-            System.out.println("I moved!");
-        for (Direction dir : directions)
-            if (tryRefine(dir))
+        if (locationHQ != null){
+            moveNextTo(locationHQ);
+            if (rc.getLocation().isAdjacentTo(locationHQ)) {
+                tryRefine(rc.getLocation().directionTo(locationHQ));
+            }
+        }
+
+
+        //        if (tryMove(randomDirection()))
+//            System.out.println("I moved!");
+        for (Direction dirs : directions)
+            if (tryRefine(dirs))
                 System.out.println("I refined soup! " + rc.getTeamSoup());
-        for (Direction dir : directions)
-            tryBuild(RobotType.DESIGN_SCHOOL, dir);
+        // build design school near HQ to speed up wall-building activity
+        for (Direction dirs : directions)
+            tryBuild(RobotType.DESIGN_SCHOOL, dirs);
         // tryBuild(randomSpawnedByMiner(), randomDirection());
-        for (Direction dir : directions)
-            tryBuild(RobotType.FULFILLMENT_CENTER, dir);
+        for (Direction dirs : directions)
+            tryBuild(RobotType.FULFILLMENT_CENTER, dirs);
 
     }
 
+    static MapLocation moveNextTo(MapLocation dest) throws GameActionException{
+        MapLocation current = rc. getLocation();
+        if (current.equals(dest)) {
+            return current;
+        }
+        System.out.println("I am moving to " + dest);
+        int deltaX = dest.x - current.x;
+        int deltaY = dest.y - current.y;
+        for (int i = 0; i < Math.abs(deltaX); i++){
+            if (deltaX < 0 && rc.canMove(Direction.WEST)) {
+                rc.move(Direction.WEST);
+            } else if (deltaX > 0 && rc.canMove(Direction.EAST)) {
+                rc.move(Direction.EAST);
+            }
+        }
+        for (int i = 0; i < Math.abs(deltaY); i++) {
+            if (deltaY < 0 && rc.canMove(Direction.SOUTH)) {
+                rc.move(Direction.SOUTH);
+            } else if (deltaY > 0 && rc.canMove(Direction.NORTH)) {
+                rc.move(Direction.NORTH);
+            }
+        }
+        String output = String.format("Robot ID: %d is now at " + rc.getLocation(), rc.getID());
+        System.out.println(output);
+        current = rc.getLocation();
+        if (current.isAdjacentTo(dest)){
+            System.out.println("Success!");
+        } else {
+            System.out.println("Nope, we are at " + current);
+        }
+        // add conditionals for avoiding elevation/pollution/water/etc
+        return dest;
+    }
 
 
     static void runRefinery() throws GameActionException {
@@ -126,6 +169,11 @@ public strictfp class RobotPlayer {
 
     static void runLandscaper() throws GameActionException {
         Direction rando;
+        Landscaper.myTeam = rc.getTeam();
+        MapLocation currentLocation = rc.getLocation();
+        if (!currentLocation.isAdjacentTo(locationHQ)) {
+            moveNextTo(locationHQ);
+        }
         if (tryMove(rando = randomDirection())){
             System.out.println("I moved to the: " + rando);
         }
