@@ -22,7 +22,7 @@ public strictfp class RobotPlayer {
 
     static int turnCount;
     static int minerCount;
-    static MapLocation locationHQ = new MapLocation(35, 26);
+    static MapLocation locationHQ;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -34,7 +34,7 @@ public strictfp class RobotPlayer {
         // This is the RobotController object. You use it to perform actions from this robot,
         // and to get information on its current status.
         RobotPlayer.rc = rc;
-
+        locationHQ = (rc.getTeam() == Team.A) ? new MapLocation(5, 26) : new MapLocation(35, 26);
         turnCount = 0;
         System.out.println("I'm a " + rc.getType() + " and I just got created!");
         while (true) {
@@ -79,35 +79,29 @@ public strictfp class RobotPlayer {
     }
 
     static void runMiner() throws GameActionException {
-//        tryBlockchain();
-
         //tryBlockchain();
+        Direction dir = randomDirection();
 
-        if (rc.getSoupCarrying() < 25){
-            for (Direction d : directions)
-                if (tryMine(d))
-                    System.out.println("I mined soup! " + rc.getSoupCarrying());
-        }
-        else if (rc.getSoupCarrying() == 25) {
+        for (Direction d : directions)
+            if (tryMine(d))
+                System.out.println("I mined soup! " + rc.getSoupCarrying());
+            else
+                tryMove(randomDirection());
+
+        if (rc.getSoupCarrying() == 10) {
             moveTo(locationHQ);
         }
-
-        Direction dir = randomDirection();
-        if (tryBuild(RobotType.DESIGN_SCHOOL, dir) == true) {
-
-        }
-        else if (rc.getSoupCarrying() == 25 && rc.getLocation().isAdjacentTo(locationHQ)) {
+        if (rc.getLocation().isAdjacentTo(locationHQ)) {
             for (Direction d : directions)
                 if (tryRefine(d))
                     System.out.println("I refined soup! " + rc.getTeamSoup());
         }
+        if (tryBuild(RobotType.DESIGN_SCHOOL, dir) == true) {
+            System.out.println("Built design school");
+        }
 
         // tryBuild(randomSpawnedByMiner(), randomDirection());
-
-
-
     }
-
 
 
     static void runRefinery() throws GameActionException {
@@ -125,7 +119,6 @@ public strictfp class RobotPlayer {
     }
 
 
-
     static void runFulfillmentCenter() throws GameActionException {
         for (Direction dir : directions)
             tryBuild(RobotType.DELIVERY_DRONE, dir);
@@ -136,24 +129,34 @@ public strictfp class RobotPlayer {
     static void runLandscaper() throws GameActionException {
 
         Landscaper ls = new Landscaper(rc, locationHQ);
+        MapLocation curr = rc.getLocation();
 
-        if (rc.getDirtCarrying() < 5){
+        if (rc.getDirtCarrying() < 5 && !curr.isAdjacentTo(locationHQ)){
             for (Direction d : directions) {
                 ls.tryDig(d);
             }
         }
-        MapLocation curr = rc.getLocation();
-        if (!curr.isAdjacentTo(locationHQ)) {
-            moveTo(locationHQ);
-        }
-        else if (curr.isAdjacentTo(locationHQ)) {
-            ls.buildWall(locationHQ);
 
-        } else {
-            tryMove(randomDirection());
+        if (!curr.isAdjacentTo(locationHQ) && rc.canMove(curr.directionTo(locationHQ))) {
+            rc.move(curr.directionTo(locationHQ));
         }
+
+        if (curr.isAdjacentTo(locationHQ) &&
+                    (curr.directionTo(locationHQ) == Direction.NORTH ||
+                        curr.directionTo(locationHQ) == Direction.SOUTH ||
+                        curr.directionTo(locationHQ) == Direction.EAST ||
+                        curr.directionTo(locationHQ) == Direction.WEST)) {
+            ls.buildWall(locationHQ);
+        }
+
+        tryMove(randomDirection());
+
 
     }
+
+    /*******************************
+     GENERAL MOVE METHODS
+     ******************************/
 
     static int[] getDistance(MapLocation myLoc, MapLocation myDest) {
 
@@ -212,6 +215,9 @@ public strictfp class RobotPlayer {
         return rc.getLocation();
     }
 
+    /*****************
+     END OF METHODS
+     *****************/
 
     static void runDeliveryDrone() throws GameActionException {
         Team enemy = rc.getTeam().opponent();

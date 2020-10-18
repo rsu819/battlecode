@@ -38,6 +38,7 @@ public class Landscaper {
 
     public void buildWall(MapLocation building) {
         MapLocation curr = rc.getLocation();
+
         for (Direction d : Direction.values()) {
             // if can deposit and elevation comparison is lower
                 if (rc.canDepositDirt(d.rotateRight()) && d == curr.directionTo(building)) {
