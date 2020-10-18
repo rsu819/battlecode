@@ -223,13 +223,12 @@ public strictfp class RobotPlayer {
         }
         else if (curr.isAdjacentTo(locationHQ)) {
             for (Direction d : directions) {
-                if (rc.canDepositDirt(d.rotateRight()) && d == curr.directionTo(locationHQ)) {
+                if (rc.canDepositDirt(d.rotateRight()) && d == curr.directionTo(locationHQ) && turnCount % 2 == 0) {
                     rc.depositDirt(d.rotateRight());
                 } else if (rc.canDepositDirt(d.rotateLeft()) && d == curr.directionTo(locationHQ)) {
                     rc.depositDirt(d.rotateLeft());
                 }
             }
-
         }
 
 
