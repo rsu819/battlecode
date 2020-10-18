@@ -14,38 +14,46 @@ import battlecode.common.*;
 
 public class Landscaper {
     // data members
-    static int MaxSenseRadius = 20;
+    static int MaxSenseRadius;
     static Team myTeam;
+    RobotController rc;
+    MapLocation locationHQ;
 
+    Landscaper(RobotController r, MapLocation hq) {
+        rc = r;
+        locationHQ = hq;
+    }
 
-    // functions
-    /*
-     - rc.digDirt() / canDigDirt
-     - rc.depositDirt() / canDepositDirt
-     - canSenseRobot(id)
-     - senseNearbyRobots()
-     - canBuildRobot
-     - buildRobot
-     - disintegrate
-     - resign
-     - submitTransaction / canSubmitTransaction
-     - RobotInfo -dirtCarrying()
-     - MapLocation
-     - team
-     - robotType
-     - move
+    public boolean tryDig(Direction d) throws GameActionException {
+        if (rc.canDigDirt(d.opposite()) && d == rc.getLocation().directionTo(locationHQ)) {
+            rc.digDirt(d.opposite());
+            System.out.println("Carrying dirt: " + rc.getDirtCarrying());
+            return true;
+        } else if (rc.canDigDirt(d)) {
+            rc.digDirt(d);
+            return true;
+        }
+        return false;
+    }
 
+    public void buildWall(MapLocation building) {
+        MapLocation curr = rc.getLocation();
+        for (Direction d : Direction.values()) {
+            // if can deposit and elevation comparison is lower
+                if (rc.canDepositDirt(d.rotateRight()) && d == curr.directionTo(building)) {
+                    try {
+                        rc.depositDirt(d.rotateRight());
+                    } catch (GameActionException e) {
+                        System.out.println("Cannot dig there. Exception: " + e);
+                    }
+                } else if (rc.canDepositDirt(d.rotateLeft()) && d == curr.directionTo(building)) {
+                    try {
+                        rc.depositDirt(d.rotateLeft());
+                    } catch (GameActionException e) {
+                        System.out.println("Cannot dig there. Exception: " + e);
+                    }
+                }
+        }
+    }
 
-     */
-    /*
-    actions:
-     - sense flooded tiles in its vicinity
-     - destroy enemy buildings
-     - send message
-     - if close to enemy building, deposit dirt
-
-     */
 }
-// public int dig(int units) {
-//
-//}

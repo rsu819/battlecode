@@ -83,7 +83,7 @@ public strictfp class RobotPlayer {
 
         //tryBlockchain();
 
-        if (tryMove(randomDirection()) && rc.getSoupCarrying() < 25){
+        if (rc.getSoupCarrying() < 25){
             for (Direction d : directions)
                 if (tryMine(d))
                     System.out.println("I mined soup! " + rc.getSoupCarrying());
@@ -108,73 +108,6 @@ public strictfp class RobotPlayer {
 
     }
 
-    static int[] getDistance(MapLocation myLoc, MapLocation myDest) {
-
-        int x = myDest.x - myLoc.x;
-        int y = myDest.y - myLoc.y;
-
-        int[] distance = {x, y};
-        System.out.println("Distance is [" + distance[0] + "," + distance[1] + "]");
-        return distance;
-    }
-
-    static MapLocation moveTo(MapLocation dest) throws GameActionException{
-        System.out.println("I am moving to " + dest);
-
-        int deltaX, deltaY, paces;
-        int[] distance;
-        MapLocation current;
-
-        current = rc.getLocation();
-        if (current.equals(dest))
-            return current;
-
-        // getDistance returns x + y coordinate distance from robot to their dest
-        distance = getDistance(current, dest);
-        deltaX = distance[0];
-        deltaY = distance[1];
-
-        // more general movement in that direction instead of a direct shot
-        if (deltaX < 0 ) {
-
-            if (tryMove(Direction.WEST)) {
-            }
-            else if (tryMove(Direction.NORTHWEST)) { }
-            else if (tryMove(Direction.SOUTHWEST)) { }
-        }
-        if (deltaX > 0) {
-            if (tryMove(Direction.EAST)) {
-            }
-            else if (tryMove(Direction.NORTHEAST)) { }
-            else if (tryMove(Direction.SOUTHEAST)) { }
-        }
-        if (deltaY < 0) {
-            if (tryMove(Direction.SOUTH)) {
-            }
-            else if (tryMove(Direction.SOUTHEAST)) { }
-            else if (tryMove(Direction.SOUTHWEST)) { }
-        }
-        if (deltaY > 0) {
-            if (tryMove(Direction.NORTH)) {
-            }
-            else if (tryMove(Direction.NORTHEAST)) { }
-            else if (tryMove(Direction.NORTHWEST)) { }
-        }
-
-
-
-
-        String output = String.format("Robot ID: %d is now at " + rc.getLocation(), rc.getID());
-        System.out.println(output);
-        current = rc.getLocation();
-        if (current.isAdjacentTo(dest)){
-            System.out.println("Success!");
-        } else {
-            System.out.println("Nope, we are at " + current);
-        }
-        // add conditionals for avoiding elevation/pollution/water/etc
-        return dest;
-    }
 
 
     static void runRefinery() throws GameActionException {
@@ -201,87 +134,82 @@ public strictfp class RobotPlayer {
  // build general tasks / skills for the landscaper
 
     static void runLandscaper() throws GameActionException {
-        // moving dirt
 
-        //Direction dir = randomDirection();
-        // if can't move, need to dig to change elevation to build path
+        Landscaper ls = new Landscaper(rc, locationHQ);
 
         if (rc.getDirtCarrying() < 5){
             for (Direction d : directions) {
-                if (rc.canDigDirt(d.opposite()) && d == rc.getLocation().directionTo(locationHQ)) {
-                    rc.digDirt(d.opposite());
-                    System.out.println("Carrying dirt: " + rc.getDirtCarrying());
-                } else if (rc.canDigDirt(d)) {
-                    rc.digDirt(d);
-                }
+                ls.tryDig(d);
             }
         }
         MapLocation curr = rc.getLocation();
         if (!curr.isAdjacentTo(locationHQ)) {
-                moveTo(locationHQ);
-
+            moveTo(locationHQ);
         }
         else if (curr.isAdjacentTo(locationHQ)) {
-            for (Direction d : directions) {
-                if (rc.canDepositDirt(d.rotateRight()) && d == curr.directionTo(locationHQ) && turnCount % 2 == 0) {
-                    rc.depositDirt(d.rotateRight());
-                } else if (rc.canDepositDirt(d.rotateLeft()) && d == curr.directionTo(locationHQ)) {
-                    rc.depositDirt(d.rotateLeft());
-                }
-            }
+            ls.buildWall(locationHQ);
+
+        } else {
+            tryMove(randomDirection());
         }
-
-
-
-
-        // establish states
-        /*
-        - carrying max dirt
-        - next to HQ
-        - carrying no dirt
-
-         */
-
-
-//        Direction rando;
-//        Landscaper.myTeam = rc.getTeam();
-//        MapLocation currentLocation = rc.getLocation();
-//        if (!currentLocation.isAdjacentTo(locationHQ)) {
-//            System.out.println("Moving to HQ");
-//            moveTo(locationHQ);
-//        }
-//
-//
-//        for (Direction d : directions) {
-//            if (d == currentLocation.directionTo(locationHQ)) {
-//                System.out.println("Building wall");
-//                rc.digDirt(d.opposite());
-//                rc.digDirt(d.opposite().rotateLeft());
-//                rc.digDirt(d.opposite().rotateRight());
-//                if (rc.canDepositDirt(d.rotateRight()))
-//                    rc.depositDirt(d.rotateRight());
-//                else if (rc.canDepositDirt(d.rotateLeft()))
-//                    rc.depositDirt(d.rotateLeft());
-//            } else if (rc.canDigDirt(d)) {
-//                rc.digDirt(d);
-//            }
-//        }
-//
-//        for (int i = 0; i < 5; i++) {
-//            Direction random = randomDirection();
-//            if (rc.canMove(random)) {
-//                tryMove(random);
-//                if (rc.canDigDirt(random.rotateRight())){
-//                    rc.digDirt(random.rotateRight());
-//                }
-//            }
-//        }
-
 
     }
 
-    static boolean buildWall(MapLocation loc) throws GameActionException {
-        return true;
+    static int[] getDistance(MapLocation myLoc, MapLocation myDest) {
+
+        int x = myDest.x - myLoc.x;
+        int y = myDest.y - myLoc.y;
+
+        int[] distance = {x, y};
+        System.out.println("Distance is [" + distance[0] + "," + distance[1] + "]");
+        return distance;
+    }
+
+    // TODO: if can't move, need to dig to change elevation to build path
+    static MapLocation moveTo(MapLocation dest) throws GameActionException {
+        System.out.println("I am moving to " + dest);
+
+        int deltaX, deltaY, paces;
+        int[] distance;
+        MapLocation current;
+
+        current = rc.getLocation();
+        if (current.equals(dest))
+            return current;
+
+        // getDistance returns x + y coordinate distance from robot to their dest
+        distance = getDistance(current, dest);
+        deltaX = distance[0];
+        deltaY = distance[1];
+
+        // more general movement in that direction instead of a direct shot
+        if (deltaX < 0) {
+
+            if (tryMove(Direction.WEST)) {
+            } else if (tryMove(Direction.NORTHWEST)) {
+            } else if (tryMove(Direction.SOUTHWEST)) {
+            }
+        }
+        if (deltaX > 0) {
+            if (tryMove(Direction.EAST)) {
+            } else if (tryMove(Direction.NORTHEAST)) {
+            } else if (tryMove(Direction.SOUTHEAST)) {
+            }
+        }
+        if (deltaY < 0) {
+            if (tryMove(Direction.SOUTH)) {
+            } else if (tryMove(Direction.SOUTHEAST)) {
+            } else if (tryMove(Direction.SOUTHWEST)) {
+            }
+        }
+        if (deltaY > 0) {
+            if (tryMove(Direction.NORTH)) {
+            } else if (tryMove(Direction.NORTHEAST)) {
+            } else if (tryMove(Direction.NORTHWEST)) {
+            }
+        }
+
+        return rc.getLocation();
     }
 
 
@@ -325,7 +253,7 @@ public strictfp class RobotPlayer {
     }
 
     static boolean tryMove() throws GameActionException {
-        for (Direction dir : directions)
+        for (Direction dir : Direction.values())
             if (tryMove(dir))
                 return true;
         return false;
@@ -348,7 +276,7 @@ public strictfp class RobotPlayer {
      * @throws GameActionException
      */
     static boolean tryMove(Direction dir) throws GameActionException {
-         System.out.println("I am trying to move " + dir + "; " + rc.isReady() + " " + rc.getCooldownTurns() + " " + rc.canMove(dir));
+        System.out.println("I am trying to move " + dir + "; " + rc.isReady() + " " + rc.getCooldownTurns() + " " + rc.canMove(dir));
         if (rc.isReady() && rc.canMove(dir)) {
             rc.move(dir);
             return true;
