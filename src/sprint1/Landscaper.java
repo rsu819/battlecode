@@ -1,6 +1,8 @@
 package sprint1;
 import battlecode.common.*;
 
+import java.util.ArrayList;
+
 //
 //    Landscaper: moves dirt around the map to adjust elevation and destroy buildings.
 //
@@ -19,42 +21,65 @@ public class Landscaper {
     RobotController rc;
     MapLocation locationHQ;
 
+
     Landscaper(RobotController r, MapLocation hq) {
         rc = r;
         locationHQ = hq;
     }
 
+    static Direction[] digAwayFromBldg(Direction bldgDir) {
+        Direction[] awayFromBldg = {bldgDir.opposite(), bldgDir.opposite().rotateLeft(), bldgDir.opposite().rotateRight()};
+        return awayFromBldg;
+    }
+
+    static Direction[] aroundBldg(Direction dir) {
+        Direction[] aroundBldg = new Direction[5];
+        int index = 0;
+        for (Direction d : Direction.allDirections()) {
+            if (Math.abs(d.dx - dir.dx) <= 1 && Math.abs(d.dy - dir.dy) <= 1 && d != dir) {
+                System.out.println("surrounding loc: " + d);
+                aroundBldg[index] = d;
+                ++index;
+            }
+        }
+        return aroundBldg;
+    }
+
     public boolean tryDig(Direction d) throws GameActionException {
-        if (rc.canDigDirt(d.opposite()) && d == rc.getLocation().directionTo(locationHQ)) {
-            rc.digDirt(d.opposite());
-            System.out.println("Carrying dirt: " + rc.getDirtCarrying());
-            return true;
-        } else if (rc.canDigDirt(d)) {
+
+        if (rc.isReady() && rc.canDigDirt(d)) {
+            System.out.println("digging dirt");
             rc.digDirt(d);
             return true;
         }
         return false;
     }
 
-    public void buildWall(MapLocation building) {
+    public void buildWall(MapLocation building, int turn) throws GameActionException {
+        System.out.println("building wall");
         MapLocation curr = rc.getLocation();
+        Direction bldg = curr.directionTo(building);
+        Direction[] surround = aroundBldg(bldg);
+        tryDepositDirt(surround[turn % 4]);
 
-        for (Direction d : Direction.values()) {
-            // if can deposit and elevation comparison is lower
-                if (rc.canDepositDirt(d.rotateRight()) && d == curr.directionTo(building)) {
-                    try {
-                        rc.depositDirt(d.rotateRight());
-                    } catch (GameActionException e) {
-                        System.out.println("Cannot dig there. Exception: " + e);
-                    }
-                } else if (rc.canDepositDirt(d.rotateLeft()) && d == curr.directionTo(building)) {
-                    try {
-                        rc.depositDirt(d.rotateLeft());
-                    } catch (GameActionException e) {
-                        System.out.println("Cannot dig there. Exception: " + e);
-                    }
-                }
         }
+//        for (Direction d : Direction.values()) {
+//            // if can deposit and elevation comparison is lower
+//                if (rc.canDepositDirt(d.rotateRight()) && d == curr.directionTo(building)) {
+//                    tryDepositDirt(d.rotateRight());
+//                } else if (rc.canDepositDirt(d.rotateLeft()) && d == curr.directionTo(building)) {
+//                    tryDepositDirt(d.rotateLeft());
+//                }
+//        }
+//    }
+
+    public boolean tryDepositDirt(Direction dir) throws GameActionException {
+        if (rc.isReady() && rc.canDepositDirt(dir)) {
+            rc.depositDirt(dir);
+            System.out.println("depositing dirt " + dir);
+            return true;
+        }
+        return false;
     }
 
 }

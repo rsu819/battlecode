@@ -131,32 +131,49 @@ public strictfp class RobotPlayer {
         Landscaper ls = new Landscaper(rc, locationHQ);
         MapLocation curr = rc.getLocation();
 
-        if (rc.getDirtCarrying() < 5 && !curr.isAdjacentTo(locationHQ)){
-            for (Direction d : directions) {
-                ls.tryDig(d);
+        if (rc.getDirtCarrying() < 5 && !curr.isAdjacentTo(locationHQ)) {
+                ls.tryDig(randomDirection());
+        }
+
+        if (rc.getDirtCarrying() < 5 && curr.isAdjacentTo(locationHQ)) {
+            Direction[] awayFromHq = Landscaper.digAwayFromBldg(curr.directionTo(locationHQ));
+            ls.tryDig(awayFromHq[turnCount % 3]);
+//            for (Direction d : awayFromHq) {
+//                ls.tryDig(d);
+//            }
+        }
+        if (curr.isAdjacentTo(locationHQ)) {
+            if (curr.directionTo(locationHQ) == Direction.NORTH ||
+                    curr.directionTo(locationHQ) == Direction.SOUTH ||
+                    curr.directionTo(locationHQ) == Direction.EAST ||
+                    curr.directionTo(locationHQ) == Direction.WEST) {
+                ls.buildWall(locationHQ, turnCount);
             }
         }
 
         if (!curr.isAdjacentTo(locationHQ) && rc.canMove(curr.directionTo(locationHQ))) {
-            rc.move(curr.directionTo(locationHQ));
-        }
-
-        if (curr.isAdjacentTo(locationHQ) &&
-                    (curr.directionTo(locationHQ) == Direction.NORTH ||
-                        curr.directionTo(locationHQ) == Direction.SOUTH ||
-                        curr.directionTo(locationHQ) == Direction.EAST ||
-                        curr.directionTo(locationHQ) == Direction.WEST)) {
-            ls.buildWall(locationHQ);
+            tryMove(curr.directionTo(locationHQ));
         }
 
         tryMove(randomDirection());
-
 
     }
 
     /*******************************
      GENERAL MOVE METHODS
      ******************************/
+
+    static MapLocation findHq() {
+
+        RobotInfo[] robots = rc.senseNearbyRobots();
+        for (RobotInfo robot : robots) {
+            if (robot.type == RobotType.HQ) {
+                return robot.location;
+            }
+        }
+        return null;
+    }
+
 
     static int[] getDistance(MapLocation myLoc, MapLocation myDest) {
 
@@ -193,25 +210,26 @@ public strictfp class RobotPlayer {
             } else if (tryMove(Direction.SOUTHWEST)) {
             }
         }
-        if (deltaX > 0) {
+        else if (deltaX > 0) {
             if (tryMove(Direction.EAST)) {
             } else if (tryMove(Direction.NORTHEAST)) {
             } else if (tryMove(Direction.SOUTHEAST)) {
             }
         }
-        if (deltaY < 0) {
+        else if (deltaY < 0) {
             if (tryMove(Direction.SOUTH)) {
-            } else if (tryMove(Direction.SOUTHEAST)) {
-            } else if (tryMove(Direction.SOUTHWEST)) {
+            } else if (tryMove(Direction.EAST)) {
+            } else if (tryMove(Direction.WEST)) {
             }
         }
-        if (deltaY > 0) {
+        else if (deltaY > 0) {
             if (tryMove(Direction.NORTH)) {
             } else if (tryMove(Direction.NORTHEAST)) {
             } else if (tryMove(Direction.NORTHWEST)) {
             }
         }
-
+        else
+            tryMove(randomDirection());
         return rc.getLocation();
     }
 
