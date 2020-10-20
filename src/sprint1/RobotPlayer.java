@@ -1,3 +1,9 @@
+/* TODO:
+ - build offensive landscaper (to pile dirt on enemy)
+ - refine the flood patrol landscaper
+ - refine wall builder to include building wall on tile that landscaper is standing on
+ */
+
 package sprint1;
 import battlecode.common.*;
 
@@ -29,6 +35,8 @@ public strictfp class RobotPlayer {
     static int turnCount;
     static int minerCount;
     static MapLocation locationHQ;
+    static MapLocation enemyHq;
+
     static MapLocation refinery;
     static boolean designSchoolCount;
     /**
@@ -63,12 +71,7 @@ public strictfp class RobotPlayer {
                     case VAPORATOR:          runVaporator();         break;
                     case DESIGN_SCHOOL:      runDesignSchool();      break;
                     case FULFILLMENT_CENTER: runFulfillmentCenter(); break;
-                    case LANDSCAPER:
-                        if (turnCount % 2 == 0)
-                            runLandscaper(LandscaperTask.WALL_BUILDER);
-                        else
-                            runLandscaper(LandscaperTask.FLOOD_PATROL);
-                        break;
+                    case LANDSCAPER:         runLandscaper();        break;
                     case DELIVERY_DRONE:     runDeliveryDrone();     break;
                     case NET_GUN:            runNetGun();            break;
                 }
@@ -84,22 +87,14 @@ public strictfp class RobotPlayer {
     }
 
     static void runHQ() throws GameActionException {
-        locationHQ = rc.getLocation();
-        System.out.println("HQ IS AT " + locationHQ);
-        while (minerCount < 4){
-            Direction dir = randomDirection();
-            if (tryBuild(RobotType.MINER, dir) == true)
-                ++minerCount;
-        }
-
+        for (Direction dir : directions)
+            tryBuild(RobotType.MINER, dir);
     }
 
     static void runMiner() throws GameActionException {
-        //tryBlockchain();
         Direction dir = randomDirection();
         MapLocation[] soup;
         RobotInfo[] robots;
-
         robots = rc.senseNearbyRobots(-1, rc.getTeam());
 
         if (locationHQ == null) {
@@ -110,7 +105,6 @@ public strictfp class RobotPlayer {
 
             }
         }
-
         if (refinery == null){
             for (RobotInfo robot : robots) {
                 if (robot.type == RobotType.REFINERY) {
@@ -118,8 +112,6 @@ public strictfp class RobotPlayer {
                 }
             }
         }
-
-
         for (Direction d: directions) {
             tryMine(d);
         }
@@ -155,7 +147,6 @@ public strictfp class RobotPlayer {
 
 
 
-        // tryBuild(randomSpawnedByMiner(), randomDirection());
     }
 
 
@@ -181,30 +172,20 @@ public strictfp class RobotPlayer {
     }
 
 
-    static void runLandscaper(LandscaperTask task) throws GameActionException {
-        RobotInfo[] robots;
-        robots = rc.senseNearbyRobots();
+    static void runLandscaper() throws GameActionException {
+
+        sprint1.Landscaper landscaper = new sprint1.Landscaper(rc, locationHQ);
 
         if (locationHQ == null) {
-            for (RobotInfo robot : robots) {
-                if (robot.type == RobotType.HQ && robot.team == rc.getTeam()) {
-                    locationHQ = robot.location;
-                }
-            }
+            locationHQ = findHq();
             tryMove(randomDirection());
         }
 
-        if (task == LandscaperTask.WALL_BUILDER) {
-            runWallBuilder();
-        } else if (task == LandscaperTask.FLOOD_PATROL) {
-            runFloodPatrol();
-        }
+        runWallBuilder(landscaper);
     }
 
     // build general tasks / skills for the landscaper
-    static void runWallBuilder()  throws GameActionException {
-
-        Landscaper builder = new Landscaper(rc, locationHQ);
+    static void runWallBuilder(sprint1.Landscaper builder)  throws GameActionException {
 
         MapLocation curr = rc.getLocation();
 
@@ -213,7 +194,7 @@ public strictfp class RobotPlayer {
         }
 
         if (rc.getDirtCarrying() < 4 && curr.isAdjacentTo(locationHQ)) {
-            Direction[] awayFromHq = Landscaper.digAwayFromBldg(curr.directionTo(locationHQ));
+            Direction[] awayFromHq = sprint1.Landscaper.digAwayFromBldg(curr.directionTo(locationHQ));
             builder.tryDig(awayFromHq[turnCount % 3]);
         }
         if (curr.isAdjacentTo(locationHQ)) {
@@ -228,27 +209,52 @@ public strictfp class RobotPlayer {
         tryMove(randomDirection());
     }
 
-    static void runFloodPatrol() throws GameActionException {
+    static void runFloodPatrol(sprint1.Landscaper patrol) throws GameActionException {
 
-        Landscaper patrol = new Landscaper(rc, locationHQ);
         MapLocation curr = rc.getLocation();
-        RobotInfo[] robots = rc.senseNearbyRobots(-1, rc.getTeam());
+        Direction d = randomDirection();
 
-        if (rc.getDirtCarrying() == RobotType.LANDSCAPER.dirtLimit) {
-            for (Direction d : directions) {
-                if (rc.senseFlooding(rc.adjacentLocation(d))) {
-                    patrol.tryDepositDirt(d);
-                }
-            }
+        if (!rc.senseFlooding(rc.adjacentLocation(d)) && rc.getDirtCarrying() != RobotType.LANDSCAPER.dirtLimit) {
+            patrol.tryDig(d);
         }
+
+        else if (rc.senseFlooding(rc.adjacentLocation(d)) && curr.isWithinDistanceSquared(locationHQ, 18)) {
+            if (rc.getDirtCarrying() > 0) {
+                patrol.tryDepositDirt(d);
+            }
+            else
+                patrol.tryDig(randomDirection());
+        }
+
+        RobotInfo[] robots = rc.senseNearbyRobots(-1, rc.getTeam());
         for (RobotInfo robot : robots) {
             if (robot.type == RobotType.HQ) {
                 tryMove(curr.directionTo(robot.location));
             }
         }
-        for (Direction d : directions) {
-            patrol.tryDig(d);
+    }
+
+    static void runOffenseUnit(sprint1.Landscaper offense) throws GameActionException {
+
+        MapLocation curr = rc.getLocation();
+
+        if (enemyHq == null){
+            RobotInfo[] robots = rc.senseNearbyRobots();
+            for (RobotInfo robot : robots) {
+                if (robot.type == RobotType.HQ && (robot.team != rc.getTeam())) {
+                    enemyHq = robot.location;
+                }
+            }
         }
+        offense.tryDig(randomDirection());
+
+        if ((rc.getDirtCarrying() == RobotType.LANDSCAPER.dirtLimit) && curr.isAdjacentTo(enemyHq)){
+            offense.tryDepositDirt(curr.directionTo(enemyHq));
+        } else {
+            tryMove(curr.directionTo(enemyHq));
+        }
+
+
     }
 
     /*******************************
@@ -277,53 +283,6 @@ public strictfp class RobotPlayer {
         return distance;
     }
 
-//    // TODO: if can't move, need to dig to change elevation to build path
-//    static MapLocation moveTo(MapLocation dest) throws GameActionException {
-//        System.out.println("I am moving to " + dest);
-//
-//        int deltaX, deltaY, paces;
-//        int[] distance;
-//        MapLocation current;
-//
-//        current = rc.getLocation();
-//        if (current.equals(dest))
-//            return current;
-//
-//        // getDistance returns x + y coordinate distance from robot to their dest
-//        distance = getDistance(current, dest);
-//        deltaX = distance[0];
-//        deltaY = distance[1];
-//
-//        // more general movement in that direction instead of a direct shot
-//        if (deltaX < 0) {
-//
-//            if (tryMove(Direction.WEST)) {
-//            } else if (tryMove(Direction.NORTHWEST)) {
-//            } else if (tryMove(Direction.SOUTHWEST)) {
-//            }
-//        }
-//        else if (deltaX > 0) {
-//            if (tryMove(Direction.EAST)) {
-//            } else if (tryMove(Direction.NORTHEAST)) {
-//            } else if (tryMove(Direction.SOUTHEAST)) {
-//            }
-//        }
-//        else if (deltaY < 0) {
-//            if (tryMove(Direction.SOUTH)) {
-//            } else if (tryMove(Direction.EAST)) {
-//            } else if (tryMove(Direction.WEST)) {
-//            }
-//        }
-//        else if (deltaY > 0) {
-//            if (tryMove(Direction.NORTH)) {
-//            } else if (tryMove(Direction.NORTHEAST)) {
-//            } else if (tryMove(Direction.NORTHWEST)) {
-//            }
-//        }
-//        else
-//            tryMove(randomDirection());
-//        return rc.getLocation();
-//    }
 
     /*****************
      END OF METHODS
