@@ -20,17 +20,17 @@ public class  Landscaper {
     static Team myTeam;
     RobotController rc;
     MapLocation locationHQ;
-    public enum TASK {
-        WALL_BUILDER,
-        OFFENSE_UNIT,
-        FLOOD_PATROL,
-    }
 
 
     Landscaper(RobotController r, MapLocation hq) {
         rc = r;
         locationHQ = hq;
     }
+
+
+
+
+
 
     static Direction[] digAwayFromBldg(Direction bldgDir) {
         Direction[] awayFromBldg = {bldgDir.opposite(), bldgDir.opposite().rotateLeft(), bldgDir.opposite().rotateRight()};
