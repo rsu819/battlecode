@@ -23,7 +23,7 @@ public strictfp class RobotPlayer {
     static int turnCount;
     static int minerCount;
     static MapLocation locationHQ;
-
+    static boolean designSchoolCount;
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
      * If this method returns, the robot dies!
@@ -34,8 +34,8 @@ public strictfp class RobotPlayer {
         // This is the RobotController object. You use it to perform actions from this robot,
         // and to get information on its current status.
         RobotPlayer.rc = rc;
-        locationHQ = (rc.getTeam() == Team.A) ? new MapLocation(5, 26) : new MapLocation(35, 26);
         turnCount = 0;
+        designSchoolCount = true;
         System.out.println("I'm a " + rc.getType() + " and I just got created!");
         while (true) {
             turnCount += 1;
@@ -81,24 +81,45 @@ public strictfp class RobotPlayer {
     static void runMiner() throws GameActionException {
         //tryBlockchain();
         Direction dir = randomDirection();
+        MapLocation[] soup;
+        RobotInfo[] robots;
+        robots = rc.senseNearbyRobots();
 
-        for (Direction d : directions)
-            if (tryMine(d))
-                System.out.println("I mined soup! " + rc.getSoupCarrying());
-            else
-                tryMove(randomDirection());
+        if (locationHQ == null) {
+            for (RobotInfo robot : robots) {
+                if (robot.type == RobotType.HQ && robot.team == rc.getTeam()) {
+                    locationHQ = robot.location;
+                }
+            }
+        }
 
-        if (rc.getSoupCarrying() == 10) {
-            moveTo(locationHQ);
+        for (Direction d: directions) {
+            tryMine(d);
+        }
+        if (rc.getSoupCarrying() < 5) {
+            tryMove(randomDirection());
+        }
+        if (rc.getSoupCarrying() < RobotType.MINER.soupLimit) {
+            soup = rc.senseNearbySoup();
+            for (MapLocation loc : soup) {
+                tryMove(rc.getLocation().directionTo(loc));
+            }
+        }
+        if (tryBuild(RobotType.DESIGN_SCHOOL, dir) == true && designSchoolCount == true) {
+            System.out.println("Built design school");
+            designSchoolCount = false;
+        }
+        else {
+            tryMove(rc.getLocation().directionTo(locationHQ));
         }
         if (rc.getLocation().isAdjacentTo(locationHQ)) {
             for (Direction d : directions)
                 if (tryRefine(d))
                     System.out.println("I refined soup! " + rc.getTeamSoup());
         }
-        if (tryBuild(RobotType.DESIGN_SCHOOL, dir) == true) {
-            System.out.println("Built design school");
-        }
+
+
+
 
         // tryBuild(randomSpawnedByMiner(), randomDirection());
     }
@@ -127,20 +148,28 @@ public strictfp class RobotPlayer {
  // build general tasks / skills for the landscaper
 
     static void runLandscaper() throws GameActionException {
+        RobotInfo[] robots;
+        robots = rc.senseNearbyRobots();
+
+        if (locationHQ == null) {
+            for (RobotInfo robot : robots) {
+                if (robot.type == RobotType.HQ && robot.team == rc.getTeam()) {
+                    locationHQ = robot.location;
+                }
+            }
+            tryMove(randomDirection());
+        }
 
         Landscaper ls = new Landscaper(rc, locationHQ);
         MapLocation curr = rc.getLocation();
 
-        if (rc.getDirtCarrying() < 5 && !curr.isAdjacentTo(locationHQ)) {
-                ls.tryDig(randomDirection());
+        if (!curr.isAdjacentTo(locationHQ) && rc.canMove(curr.directionTo(locationHQ))) {
+            tryMove(curr.directionTo(locationHQ));
         }
 
-        if (rc.getDirtCarrying() < 5 && curr.isAdjacentTo(locationHQ)) {
+        if (rc.getDirtCarrying() < 4 && curr.isAdjacentTo(locationHQ)) {
             Direction[] awayFromHq = Landscaper.digAwayFromBldg(curr.directionTo(locationHQ));
             ls.tryDig(awayFromHq[turnCount % 3]);
-//            for (Direction d : awayFromHq) {
-//                ls.tryDig(d);
-//            }
         }
         if (curr.isAdjacentTo(locationHQ)) {
             if (curr.directionTo(locationHQ) == Direction.NORTH ||
@@ -151,12 +180,7 @@ public strictfp class RobotPlayer {
             }
         }
 
-        if (!curr.isAdjacentTo(locationHQ) && rc.canMove(curr.directionTo(locationHQ))) {
-            tryMove(curr.directionTo(locationHQ));
-        }
-
         tryMove(randomDirection());
-
     }
 
     /*******************************

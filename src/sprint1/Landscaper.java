@@ -14,12 +14,17 @@ import java.util.ArrayList;
 //    If enough dirt is placed on a flooded tile to raise its elevation above the water level, it becomes not flooded.
 
 
-public class Landscaper {
+public class  Landscaper {
     // data members
     static int MaxSenseRadius;
     static Team myTeam;
     RobotController rc;
     MapLocation locationHQ;
+    public enum TASK {
+        WALL_BUILDER,
+        OFFENSE_UNIT,
+        FLOOD_PATROL,
+    }
 
 
     Landscaper(RobotController r, MapLocation hq) {
@@ -61,17 +66,8 @@ public class Landscaper {
         Direction bldg = curr.directionTo(building);
         Direction[] surround = aroundBldg(bldg);
         tryDepositDirt(surround[turn % 4]);
-
         }
-//        for (Direction d : Direction.values()) {
-//            // if can deposit and elevation comparison is lower
-//                if (rc.canDepositDirt(d.rotateRight()) && d == curr.directionTo(building)) {
-//                    tryDepositDirt(d.rotateRight());
-//                } else if (rc.canDepositDirt(d.rotateLeft()) && d == curr.directionTo(building)) {
-//                    tryDepositDirt(d.rotateLeft());
-//                }
-//        }
-//    }
+
 
     public boolean tryDepositDirt(Direction dir) throws GameActionException {
         if (rc.isReady() && rc.canDepositDirt(dir)) {
