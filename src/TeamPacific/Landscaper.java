@@ -1,4 +1,4 @@
-package sprint1;
+package TeamPacific;
 import battlecode.common.*;
 
 public class  Landscaper {
@@ -23,7 +23,7 @@ public class  Landscaper {
         Direction[] aroundBldg = new Direction[5];
         int index = 0;
         for (Direction d : Direction.allDirections()) {
-            if ((Math.abs(d.dx - dir.dx) <= 1 && Math.abs(d.dy - dir.dy) <= 1 || d != dir)) {
+            if ((Math.abs(d.dx - dir.dx) <= 1 && Math.abs(d.dy - dir.dy) <= 1) && d != dir) {
                 System.out.println("surrounding loc: " + d);
                 aroundBldg[index] = d;
                 ++index;
@@ -48,7 +48,7 @@ public class  Landscaper {
         Direction bldg = curr.directionTo(building);
         Direction[] surround = aroundBldg(bldg);
         tryDepositDirt(surround[turn % 4]);
-        }
+    }
 
 
     public boolean tryDepositDirt(Direction dir) throws GameActionException {
