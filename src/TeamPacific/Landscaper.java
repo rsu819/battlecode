@@ -21,35 +21,29 @@ public class Landscaper extends Robot {
         FLOOD_PATROL
     }
     
-    Landscaper(RobotController rc) {
+    public Landscaper(RobotController rc) {
         super(rc);
-    }
-
-    Landscaper(RobotController rc, MapLocation hq) {
-        super(rc);
-        locationHQ = hq;
     }
 
 	@Override
 	void run(int turnCount) throws GameActionException {
 		// TODO Auto-generated method stub
         if (locationHQ == null) {
-            locationHQ = getHqLoc();
+            locationHQ = getHqLoc(rc.getBlock(1));
         }
 		runWallBuilder(turnCount);
 	}
     
-    static Direction[] digAwayFromBldg(Direction bldgDir) {
+    public static Direction[] findDigDirs(Direction bldgDir) {
         Direction[] awayFromBldg = {bldgDir.opposite(), bldgDir.opposite().rotateLeft(), bldgDir.opposite().rotateRight()};
         return awayFromBldg;
     }
 
-    static Direction[] aroundBldg(Direction dir) {
+    static Direction[] findBuildDirs(Direction dir) {
         Direction[] aroundBldg = new Direction[5];
         int index = 0;
         for (Direction d : Direction.allDirections()) {
             if ((Math.abs(d.dx - dir.dx) <= 1 && Math.abs(d.dy - dir.dy) <= 1) && d != dir) {
-                System.out.println("surrounding loc: " + d);
                 aroundBldg[index] = d;
                 ++index;
             }
@@ -60,21 +54,20 @@ public class Landscaper extends Robot {
     public static boolean tryDig(Direction d) throws GameActionException {
 
         if (rc.isReady() && rc.canDigDirt(d)) {
-            System.out.println("digging dirt");
+//            System.out.println("digging dirt");
             rc.digDirt(d);
             return true;
         }
         return false;
     }
 
-    public static void buildWall(MapLocation building, int turn) throws GameActionException {
+    public static boolean buildWall(MapLocation building, int turn) throws GameActionException {
         System.out.println("building wall");
         MapLocation curr = rc.getLocation();
         Direction bldg = curr.directionTo(building);
-        Direction[] surround = aroundBldg(bldg);
-        tryDepositDirt(surround[turn % 5]);
+        Direction[] surround = findBuildDirs(bldg);
+        return tryDepositDirt(surround[turn % 5]);
     }
-
 
     public static boolean tryDepositDirt(Direction dir) throws GameActionException {
         if (rc.isReady() && rc.canDepositDirt(dir)) {
@@ -97,7 +90,7 @@ public class Landscaper extends Robot {
 	        }
 	
 	        if (rc.getDirtCarrying() < 15  && curr.isAdjacentTo(locationHQ)) {
-	            Direction[] awayFromHq = Landscaper.digAwayFromBldg(curr.directionTo(locationHQ));
+	            Direction[] awayFromHq = Landscaper.findDigDirs(curr.directionTo(locationHQ));
 	            tryDig(awayFromHq[turnCount % 3]);
 	        }
 	        if (curr.isAdjacentTo(locationHQ)) {
@@ -110,7 +103,7 @@ public class Landscaper extends Robot {
 
         tryMove(randomDirection());
     }
-
+    // TODO: activate other modes of landscaper action
     static void runFloodPatrol(Landscaper patrol) throws GameActionException {
 
         MapLocation curr = rc.getLocation();
@@ -149,7 +142,7 @@ public class Landscaper extends Robot {
             }
         }
         offense.tryDig(randomDirection());
-
+        // TODO: adjust logic for when to dig and when to bury enemy HQ
         if ((rc.getDirtCarrying() == RobotType.LANDSCAPER.dirtLimit) && curr.isAdjacentTo(enemyHq)){
             offense.tryDepositDirt(curr.directionTo(enemyHq));
         } else {
@@ -162,11 +155,10 @@ public class Landscaper extends Robot {
     /*******************************
      GENERAL MOVE METHODS
      ******************************/
-
+    // TODO: refactor to make even more generic a function?
     // uses method from Blockchain class to create Transaction message
-    static MapLocation getHqLoc() throws GameActionException{
+    public static MapLocation getHqLoc(Transaction[] txns) throws GameActionException{
 
-        Transaction[] txns = rc.getBlock(1);
         for (Transaction txn : txns) {
             int[] message = txn.getMessage();
             if (message[0] == TeamId && message[2] == Resource.HomeHQ) {
