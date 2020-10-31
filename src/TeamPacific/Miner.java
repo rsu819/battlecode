@@ -22,6 +22,7 @@ public class Miner extends Robot {
     public static Direction lastDir = randomDirection();
     public static Direction currDir = lastDir;
     public static MapLocation[] nearbySoup;
+    public static MapLocation remoteSoup;
     public static MapLocation currentTargetLoc;
     public static MapLocation lastTargetLoc;
     static Direction[] dirList;
@@ -60,21 +61,21 @@ public class Miner extends Robot {
 	                setState(States.BUILD);
 	                //tryBuild(RobotType.DESIGN_SCHOOL, randomDirection());
 	            }
+				int round = rc.getRoundNum();
+				remoteSoup = null;
+				if (round > 50) {
+					for (int i = round - 1; i > round-50 ; i--) {
+						remoteSoup = getRemoteSoupLoc(i);
+						if (remoteSoup != null) {
+							break;
+						}
+					}
+				}
 
 	            switch( getState() ) {
 	                // Wander around in a (general) straight line until nearby soup is found
 	                case WANDER:
 	                	// check blockchain for soup messages
-						int round = rc.getRoundNum();
-						MapLocation remoteSoup = null;
-						if (round > 50) {
-							for (int i = round - 1; i > round-50 ; i--) {
-								remoteSoup = getRemoteSoupLoc(i);
-								if (remoteSoup != null) {
-									break;
-								}
-							}
-						}
 	                    // Check if there is any soup nearby first
 	                    nearbySoup = rc.senseNearbySoup();
 	                    //System.out.println(nearbySoup[0]);
@@ -118,12 +119,13 @@ public class Miner extends Robot {
 	                        setState(States.REFINE);
 	                    } else {
 	                        if (tryMine(tempDir)) {
-	                        		MapLocation myLoc = rc.getLocation();
-									// emit soup location if it is outside of miner sense radius from HQ
-									if (myLoc.distanceSquaredTo(locationHQ) > RobotType.MINER.sensorRadiusSquared) {
-										boolean mined = emitSoupLoc(myLoc);
-										System.out.println("Emitted soup location: " + mined);
-									}
+								MapLocation myLoc = rc.getLocation();
+								// emit soup location if it is outside of miner sense radius from HQ, and there is a certain qty.
+								if (myLoc.distanceSquaredTo(locationHQ) > RobotType.MINER.sensorRadiusSquared &&
+										rc.senseNearbySoup(35).length > 10) {
+									boolean mined = emitSoupLoc(myLoc);
+									System.out.println("Emitted soup location: " + mined);
+								}
 	                            //System.out.println("I mined soup! " + tempDir + " " + rc.getSoupCarrying());
 	                        } else { //Check if there is any other soup around to mine
 	                            nearbySoup = rc.senseNearbySoup(2);
@@ -293,5 +295,4 @@ public class Miner extends Robot {
 			}
 			return null;
 		}
-
 }

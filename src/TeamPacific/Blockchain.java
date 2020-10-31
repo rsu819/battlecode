@@ -7,7 +7,9 @@ import java.util.*;
 // class methods for RobotController to use Blockchain.
 // helps to construct messages and track blockchain cost
 public class Blockchain {
-    public static int TeamId = 55555;
+
+    // change code! something sneakier
+    public static int TeamId = 603720;
 
     public static class MessageTo {
         static int Miner = 1;
