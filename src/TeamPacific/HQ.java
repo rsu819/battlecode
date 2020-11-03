@@ -1,6 +1,7 @@
 package TeamPacific;
 import battlecode.common.*;
 import static TeamPacific.Blockchain.*;
+import static TeamPacific.RobotPlayer.enemyHq;
 
 
 public class HQ extends Robot {
@@ -8,7 +9,7 @@ public class HQ extends Robot {
     static int minerCount;
     static int numMiners;
 
-	HQ(RobotController rc) {
+	public  HQ(RobotController rc) {
 		// TODO Auto-generated constructor stub
 		super(rc);
         minerCount = 0;
@@ -34,6 +35,19 @@ public class HQ extends Robot {
             emitHqLocation();
         }
 
+        if ((rc.getRoundNum() % 10 == 0)) {
+            int wallHeight = 0;
+            for (Direction dir : directions) {
+                int elevGain = Math.abs(rc.senseElevation(rc.adjacentLocation(dir)) - rc.senseElevation(rc.getLocation()));
+                if (elevGain > 10) {
+                    wallHeight++;
+                }
+            }
+            if (wallHeight >= 8) {
+                emitAttackMode(enemyHq);
+            }
+        }
+
         for (Direction dir : directions) {
             if (numMiners < maxMiner && tryBuild(RobotType.MINER, dir)) {
                 ++numMiners;
@@ -52,7 +66,7 @@ public class HQ extends Robot {
 	static boolean emitHqLocation() throws GameActionException{
 	    int[] message;
 	    int cost = 10;
-	    message = foundResourceMessage(rc.getLocation(), MessageTo.Any, Resource.HomeHQ);
+	    message = foundResourceMessage(rc.getLocation(), MessageTo.Any, Resource.HomeHQ, false);
 	    if (rc.canSubmitTransaction(message, cost)){
 	        rc.submitTransaction(message, cost);
 	        return true;
@@ -60,5 +74,13 @@ public class HQ extends Robot {
 	    return false;
     }
 
+    public static void emitAttackMode(MapLocation enemyHq) throws GameActionException {
+        int[] message;
+        int cost = 10;
+        message = foundResourceMessage(enemyHq, MessageTo.Landscaper, Resource.EnemyHQ, true);
+        if (rc.canSubmitTransaction(message, cost)) {
+            rc.submitTransaction(message, cost);
+        }
+    }
 
 }

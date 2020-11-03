@@ -273,7 +273,7 @@ public class Miner extends Robot {
 	    static boolean emitSoupLoc(MapLocation soupLoc) throws GameActionException {
 			int[] message;
 			int cost = 10;
-			message = foundResourceMessage(soupLoc, MessageTo.Miner, Resource.Soup);
+			message = foundResourceMessage(soupLoc, MessageTo.Miner, Resource.Soup, false);
 			if (rc.canSubmitTransaction(message, cost)){
 				rc.submitTransaction(message, cost);
 				return true;

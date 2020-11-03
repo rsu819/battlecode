@@ -25,17 +25,30 @@ public class Blockchain {
         static int Cows = 4;
     }
 
-    public static int[] foundResourceMessage(MapLocation loc, int robot, int rsrc) {
+
+    public static int[] foundResourceMessage(MapLocation loc, int robot, int rsrc, boolean attack) {
         int[] message = {0,0,0,0,0,0,0};
         message[0] = TeamId;
         message[1] = robot;
         message[2] = rsrc;
         message[3] = loc.x;
         message[4] = loc.y;
+        if (attack == true) {
+            message[5] = 1;
+        }
 
         return message;
     }
 
+    public static int[] readBlockchain(Transaction[] txns, int recipient) {
+        for (Transaction txn : txns) {
+            int[] message = txn.getMessage();
+            if (message[0] == TeamId && message[1] == recipient) {
+                return message;
+            }
+        }
+        return null;
+    }
 
     /* fields for the message:
 

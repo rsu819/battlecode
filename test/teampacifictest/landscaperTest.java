@@ -4,24 +4,32 @@ import battlecode.common.*;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static TeamPacific.Blockchain.TeamId;
+import static TeamPacific.HQ.emitAttackMode;
 import static org.mockito.Mockito.*;
 import TeamPacific.*;
+
+import java.util.Map;
 
 public class landscaperTest {
 
     static MapLocation expectedHq;
     static Transaction[] block;
+    static Transaction[] block1;
     static Landscaper testLandscaper;
-    static RobotController mockRC;
+    static RobotController mockRC1;
+
 
     @BeforeClass
     public static void setupLandscaperTest() {
 
         // instantiate mock RobotController for testing only
-        mockRC = mock(RobotController.class);
-        testLandscaper = new Landscaper(mockRC);
+        mockRC1 = mock(RobotController.class);
+        testLandscaper = new Landscaper(mockRC1);
 
         /**** mock Blockchain ****/
+
         expectedHq = new MapLocation(10, 25);
         int[] goodMessage = {603720, 2, 2, 10, 25, 0, 0};
         int[] badMessage = {123, 123, 123, 123, 123, 123, 123};
@@ -37,6 +45,22 @@ public class landscaperTest {
                 block[i] = notOurTransaction;
             }
         }
+
+        int[] attackMessage = {603720, 2, 2, 33, 33, 1, 0};
+        int[] randMessage = {123, 123, 123, 123, 123, 123, 123};
+
+        // set up expected message
+        block1 = new Transaction[10];
+        Transaction attackTransaction = new Transaction(0, attackMessage, 0);
+        Transaction randTransaction = new Transaction(0, randMessage, 10);
+        for (int i = 0; i < 10; i++) {
+            if (i == 6) {
+                block1[i] = attackTransaction;
+            } else {
+                block1[i] = randTransaction;
+            }
+        }
+
     }
 
     @Test
@@ -58,7 +82,7 @@ public class landscaperTest {
 
     @Test
     public void testTryDepositDirt() throws GameActionException{
-        when(mockRC.isReady()).thenReturn(false);
+        when(mockRC1.isReady()).thenReturn(false);
         Assert.assertEquals(false, Landscaper.tryDepositDirt(Direction.EAST));
     }
 
@@ -68,15 +92,23 @@ public class landscaperTest {
         Direction[] buildingDirs = {Direction.NORTH, Direction.SOUTH, Direction.SOUTHWEST, Direction.NORTHWEST, Direction.CENTER};
         // hard code landscaper location
         MapLocation currentLoc = new MapLocation(11,25);
-        when(mockRC.getLocation()).thenReturn(currentLoc);
         // mock landscaper ability to perform action this turn
-        when(mockRC.isReady()).thenReturn(true);
+        when(mockRC1.isReady()).thenReturn(true);
+        when(mockRC1.getLocation()).thenReturn(currentLoc);
+
         for (int i = 0; i < 5; i++ ) {
-            when(mockRC.canDepositDirt(buildingDirs[i])).thenReturn(true);
+            when(mockRC1.canDepositDirt(buildingDirs[i])).thenReturn(true);
             Assert.assertEquals(true, Landscaper.buildWall(expectedHq, (i)));
         }
     }
 
+    @Test
+    public void testCheckMessage() throws GameActionException {
+        when(mockRC1.getBlock(10)).thenReturn(block1);
+        Landscaper.LandscaperTask actualState = Landscaper.checkMessage(block1);
+
+        Assert.assertEquals(Landscaper.LandscaperTask.OFFENSE_UNIT, actualState);
+    }
 
 
     /* things to test:

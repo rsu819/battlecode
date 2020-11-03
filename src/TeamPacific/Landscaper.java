@@ -7,15 +7,16 @@
 package TeamPacific;
 import battlecode.common.*;
 import static TeamPacific.Blockchain.*;
+import static TeamPacific.RobotPlayer.enemyHq;
 
 public class Landscaper extends Robot {
     // data members
     static int MaxSenseRadius;
     static Team myTeam;
     static MapLocation locationHQ = null;
-    static MapLocation enemyHq;
-    
-    public enum LandscaperTask {
+    static LandscaperTask State = null;
+
+    public enum LandscaperTask{
         WALL_BUILDER,
         OFFENSE_UNIT,
         FLOOD_PATROL
@@ -31,7 +32,20 @@ public class Landscaper extends Robot {
         if (locationHQ == null) {
             locationHQ = getHqLoc(rc.getBlock(1));
         }
-		runWallBuilder(turnCount);
+
+        int[] message = null;
+        if (rc.getRoundNum() % 10 == 1) {
+            State = checkMessage(rc.getBlock(rc.getRoundNum()-1));
+        } else
+            State = LandscaperTask.WALL_BUILDER;
+
+        switch(State) {
+            case OFFENSE_UNIT:
+                runOffenseUnit(turnCount);
+                break;
+            default:
+                runWallBuilder(turnCount);
+        }
 	}
     
     public static Direction[] findDigDirs(Direction bldgDir) {
@@ -81,6 +95,7 @@ public class Landscaper extends Robot {
 	 // build general tasks / skills for the landscaper
     static void runWallBuilder(int turnCount)  throws GameActionException {
 
+        State = LandscaperTask.WALL_BUILDER;
         MapLocation curr = rc.getLocation();
         
         if( locationHQ != null ) {
@@ -129,7 +144,7 @@ public class Landscaper extends Robot {
         }
     }
 
-    static void runOffenseUnit(Landscaper offense) throws GameActionException {
+    static void runOffenseUnit(int turnCount) throws GameActionException {
 
         MapLocation curr = rc.getLocation();
 
@@ -141,14 +156,13 @@ public class Landscaper extends Robot {
                 }
             }
         }
-        offense.tryDig(randomDirection());
+        tryDig(randomDirection());
         // TODO: adjust logic for when to dig and when to bury enemy HQ
         if ((rc.getDirtCarrying() == RobotType.LANDSCAPER.dirtLimit) && curr.isAdjacentTo(enemyHq)){
-            offense.tryDepositDirt(curr.directionTo(enemyHq));
+            tryDepositDirt(curr.directionTo(enemyHq));
         } else {
             tryMove(curr.directionTo(enemyHq));
         }
-
 
     }
 
@@ -170,15 +184,18 @@ public class Landscaper extends Robot {
         return null;
     }
 
-    static int[] getDistance(MapLocation myLoc, MapLocation myDest) {
+   public static LandscaperTask checkMessage(Transaction[] txns) throws GameActionException {
 
-        int x = myDest.x - myLoc.x;
-        int y = myDest.y - myLoc.y;
+       for (Transaction txn : txns) {
+           int[] message = txn.getMessage();
+           if (message[0] == TeamId && message[1] == MessageTo.Landscaper && message[5] == 1) {
+               System.out.println("Attack EnemyHq!");
+               return LandscaperTask.OFFENSE_UNIT;
+           }
+       }
+       return LandscaperTask.WALL_BUILDER;
+   }
 
-        int[] distance = {x, y};
-        System.out.println("Distance is [" + distance[0] + "," + distance[1] + "]");
-        return distance;
-    }
     
     /*****************
     END OF METHODS
