@@ -1,6 +1,8 @@
 package TeamPacific;
 import battlecode.common.*;
 
+import static TeamPacific.Blockchain.TeamId;
+
 public strictfp class RobotPlayer {
     static RobotController rc;
 
@@ -18,14 +20,15 @@ public strictfp class RobotPlayer {
             RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
 
     static int turnCount;
-    static int buildCountD;
     static int buildCountF;
 
     // Used only for robots that needed their own classes for more complex logic
-    static TeamPacific.HQ hq;
-    static TeamPacific.Landscaper landscaper;
-    static TeamPacific.Miner miner;
+    static HQ hq;
+    static Landscaper landscaper;
+    static Miner miner;
     static Drone drone;
+    static DesignSchool designSchool;
+    static FulfillmentCenter fulfillmentCenter;
     public static MapLocation enemyHq;
 
     /**
@@ -35,12 +38,16 @@ public strictfp class RobotPlayer {
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
 
+        if (rc.getTeam() == Team.A)
+            TeamId = 111;
+        else
+            TeamId = 222;
+
         // This is the RobotController object. You use it to perform actions from this robot,
         // and to get information on its current status.
         RobotPlayer.rc = rc;
 
         turnCount = 0;
-        buildCountD = 0;
         buildCountF = 0;
 
         //Used to initialize some robots
@@ -57,6 +64,12 @@ public strictfp class RobotPlayer {
             case DELIVERY_DRONE:
                 drone = new Drone(rc);
                 break;
+            case DESIGN_SCHOOL:
+                designSchool = new DesignSchool(rc);
+                break;
+            case FULFILLMENT_CENTER:
+                fulfillmentCenter = new FulfillmentCenter(rc);
+                break;
         }
 
         while (true) {
@@ -69,15 +82,15 @@ public strictfp class RobotPlayer {
                 // You can add the missing ones or rewrite this into your own control structure.
                 //System.out.println("I'm a " + rc.getType() + "! Location " + rc.getLocation());
                 switch (rc.getType()) {
-                    case HQ:                 hq.run(turnCount);             break;
-                    case MINER:              miner.run(turnCount);   		break;
-                    case REFINERY:           runRefinery();				 	break;
-                    case VAPORATOR:          runVaporator();         		break;
-                    case DESIGN_SCHOOL:      runDesignSchool();      		break;
-                    case FULFILLMENT_CENTER: runFulfillmentCenter(); 		break;
-                    case LANDSCAPER:         landscaper.run(turnCount);     break;
-                    case DELIVERY_DRONE:     drone.run(turnCount);     		break;
-                    case NET_GUN:            runNetGun();            		break;
+                    case HQ:                 hq.run(turnCount);                 break;
+                    case MINER:              miner.run(turnCount);   		    break;
+                    case LANDSCAPER:         landscaper.run(turnCount);         break;
+                    case DELIVERY_DRONE:     drone.run(turnCount);     		    break;
+                    case DESIGN_SCHOOL:      designSchool.run(turnCount);       break;
+                    case FULFILLMENT_CENTER: fulfillmentCenter.run(turnCount);  break;
+                    case NET_GUN:            runNetGun();            		    break;
+                    case REFINERY:           runRefinery();				 	    break;
+                    case VAPORATOR:          runVaporator();         		    break;
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -96,60 +109,6 @@ public strictfp class RobotPlayer {
 
     static void runVaporator() throws GameActionException {
 
-    }
-
-    static void runDesignSchool() throws GameActionException {
-
-        if (buildCountD < 1) {
-            for (Direction dir : directions) {
-                if(tryBuild(RobotType.LANDSCAPER, dir)) {
-                    buildCountD++;
-                }
-            }
-        }
-    }
-
-    static void runFulfillmentCenter() throws GameActionException {
-        if (buildCountF < 1) {
-            for (Direction dir : directions) {
-                if(tryBuild(RobotType.DELIVERY_DRONE, dir)) {
-                    buildCountF++;
-                }
-            }
-        }
-    }
-
-    static void runDeliveryDrone() throws GameActionException {
-    	/*
-        Team enemy = rc.getTeam().opponent();
-        if (!rc.isCurrentlyHoldingUnit()) {
-            // See if there are any enemy robots within capturing range
-            RobotInfo[] robots = rc.senseNearbyRobots(GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED, enemy);
-
-            if (robots.length > 0) {
-                // Pick up a first robot within range
-                rc.pickUpUnit(robots[0].getID());
-                System.out.println("I picked up " + robots[0].getID() + "!");
-            }
-        } else {
-            // No close robots, so search for robots within sight radius
-            tryMove(randomDirection());
-        }*/
-    }
-
-    /**
-     * Attempts to build a given robot in a given direction.
-     *
-     * @param type The type of the robot to build
-     * @param dir The intended direction of movement
-     * @return true if a move was performed
-     * @throws GameActionException
-     */
-    static boolean tryBuild(RobotType type, Direction dir) throws GameActionException {
-        if (rc.isReady() && rc.canBuildRobot(type, dir)) {
-            rc.buildRobot(type, dir);
-            return true;
-        } else return false;
     }
 
     static void runNetGun() throws GameActionException {

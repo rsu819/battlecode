@@ -112,28 +112,6 @@ public class Landscaper extends Robot {
                 }
             }
         }
-
-//        if( locationHQ != null ) {
-//
-//            if (!curr.isAdjacentTo(locationHQ) && rc.canMove(curr.directionTo(locationHQ))) {
-//                tryMove(curr.directionTo(locationHQ));
-//            }
-//
-//            if (rc.getDirtCarrying() < 15  && curr.isAdjacentTo(locationHQ)) {
-//                awayFromHq = Landscaper.findDigDirs(curr.directionTo(locationHQ));
-//                tryDig(awayFromHq[turnCount % 3]);
-//            }
-//            if (curr.isAdjacentTo(locationHQ)) {
-//                if (turnCount > 15 &&
-//                        curr.directionTo(locationHQ) == Direction.EAST || curr.directionTo(locationHQ) == Direction.WEST) {
-//                    buildWall(locationHQ, turnCount);
-//                }
-//            } else {
-//                awayFromHq = Landscaper.findDigDirs(curr.directionTo(locationHQ));
-//                tryDig(awayFromHq[turnCount % 3]);
-//            }
-//        }
-
         tryMove(randomDirection());
     }
 
