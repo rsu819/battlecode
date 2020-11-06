@@ -4,7 +4,7 @@ import battlecode.common.*;
 public strictfp class RobotPlayer {
     static RobotController rc;
 
-    static Direction[] directions = {
+    public static Direction[] directions = {
             Direction.NORTH,
             Direction.NORTHEAST,
             Direction.EAST,
@@ -18,13 +18,15 @@ public strictfp class RobotPlayer {
             RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
 
     static int turnCount;
-    static int buildCount;
+    static int buildCountD;
+    static int buildCountF;
 
     // Used only for robots that needed their own classes for more complex logic
-    static HQ hq;
-    static Landscaper landscaper;
-    static Miner miner;
-    public static MapLocation enemyHq = new MapLocation(33,33);
+    static TeamPacific.HQ hq;
+    static TeamPacific.Landscaper landscaper;
+    static TeamPacific.Miner miner;
+    static Drone drone;
+    public static MapLocation enemyHq;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -38,22 +40,25 @@ public strictfp class RobotPlayer {
         RobotPlayer.rc = rc;
 
         turnCount = 0;
-        buildCount = 0;
-
+        buildCountD = 0;
+        buildCountF = 0;
 
         //Used to initialize some robots
         switch (rc.getType()) {
-        	case HQ:
-        		hq = new HQ(rc);
-        		break;
-        	case LANDSCAPER:
-        		landscaper = new Landscaper(rc);
-        		break;
-        	case MINER:
-        		miner = new Miner(rc);
-        		break;
+            case HQ:
+                hq = new TeamPacific.HQ(rc);
+                break;
+            case LANDSCAPER:
+                landscaper = new TeamPacific.Landscaper(rc);
+                break;
+            case MINER:
+                miner = new TeamPacific.Miner(rc);
+                break;
+            case DELIVERY_DRONE:
+                drone = new Drone(rc);
+                break;
         }
-        
+
         while (true) {
             turnCount += 1;
             System.out.println("Turncount: " + turnCount);
@@ -71,7 +76,7 @@ public strictfp class RobotPlayer {
                     case DESIGN_SCHOOL:      runDesignSchool();      		break;
                     case FULFILLMENT_CENTER: runFulfillmentCenter(); 		break;
                     case LANDSCAPER:         landscaper.run(turnCount);     break;
-                    case DELIVERY_DRONE:     runDeliveryDrone();     		break;
+                    case DELIVERY_DRONE:     drone.run(turnCount);     		break;
                     case NET_GUN:            runNetGun();            		break;
                 }
 
@@ -94,21 +99,24 @@ public strictfp class RobotPlayer {
     }
 
     static void runDesignSchool() throws GameActionException {
-    	
-        if (buildCount < 1) {
+
+        if (buildCountD < 1) {
             for (Direction dir : directions) {
                 if(tryBuild(RobotType.LANDSCAPER, dir)) {
-                    buildCount++;
+                    buildCountD++;
                 }
             }
         }
     }
 
     static void runFulfillmentCenter() throws GameActionException {
-    	/*
-        for (Direction dir : directions)
-            tryBuild(RobotType.DELIVERY_DRONE, dir);
-        randomDirection().rotateLeft();*/
+        if (buildCountF < 1) {
+            for (Direction dir : directions) {
+                if(tryBuild(RobotType.DELIVERY_DRONE, dir)) {
+                    buildCountF++;
+                }
+            }
+        }
     }
 
     static void runDeliveryDrone() throws GameActionException {
@@ -128,7 +136,7 @@ public strictfp class RobotPlayer {
             tryMove(randomDirection());
         }*/
     }
-    
+
     /**
      * Attempts to build a given robot in a given direction.
      *

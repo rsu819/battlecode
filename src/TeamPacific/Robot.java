@@ -114,14 +114,14 @@ abstract class Robot {
      * @return true if a move was performed
      * @throws GameActionException
      */
-    static boolean tryBuild(RobotType type, Direction dir) throws GameActionException {
+    public static boolean tryBuild(RobotType type, Direction dir) throws GameActionException {
         if (rc.isReady() && rc.canBuildRobot(type, dir)) {
             rc.buildRobot(type, dir);
             return true;
         } else return false;
     }
     
-    static void tryBlockchain(int turnCount) throws GameActionException {
+    public static void tryBlockchain(int turnCount) throws GameActionException {
         if (turnCount < 3) {
             int[] message = new int[7];
             for (int i = 0; i < 7; i++) {
@@ -130,7 +130,7 @@ abstract class Robot {
             if (rc.canSubmitTransaction(message, 10))
                 rc.submitTransaction(message, 10);
         }
-//         System.out.println(rc.getRoundMessages(turnCount-1));
+        // System.out.println(rc.getRoundMessages(turnCount-1));
     }
 	
 }

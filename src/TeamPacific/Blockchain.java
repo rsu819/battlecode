@@ -2,7 +2,7 @@ package TeamPacific;
 
 import battlecode.common.*;
 
-import java.util.*;
+import static TeamPacific.RobotPlayer.rc;
 
 // class methods for RobotController to use Blockchain.
 // helps to construct messages and track blockchain cost
@@ -40,14 +40,38 @@ public class Blockchain {
         return message;
     }
 
-    public static int[] readBlockchain(Transaction[] txns, int recipient) {
+    public static int[] readBlockchain(Transaction[] txns, int recipient, int resource) {
         for (Transaction txn : txns) {
             int[] message = txn.getMessage();
-            if (message[0] == TeamId && message[1] == recipient) {
+            if (message[0] == TeamId && message[1] == recipient && message[2] == resource) {
                 return message;
             }
         }
         return null;
+    }
+
+    public static MapLocation getHqLoc(Transaction[] txns) throws GameActionException{
+
+        for (Transaction txn : txns) {
+            int[] message = txn.getMessage();
+            if (message[0] == TeamId && message[2] == Resource.HomeHQ) {
+                MapLocation hq = new MapLocation(message[3], message[4]);
+                System.out.println("Found HQ: " + hq.x + ", " + hq.y);
+                return hq;
+            }
+        }
+        return null;
+    }
+
+    public static boolean emitEnemyHq(MapLocation enemy) throws GameActionException{
+        int[] message;
+        int cost = 10;
+        message = foundResourceMessage(enemy, MessageTo.Any, Resource.EnemyHQ, false);
+        if (rc.canSubmitTransaction(message, cost)){
+            rc.submitTransaction(message, cost);
+            return true;
+        }
+        return false;
     }
 
     /* fields for the message:

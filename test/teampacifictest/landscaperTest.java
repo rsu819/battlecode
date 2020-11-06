@@ -1,16 +1,12 @@
 package teampacifictest;
 
+import TeamPacific.Blockchain;
+import TeamPacific.Landscaper;
 import battlecode.common.*;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static TeamPacific.Blockchain.TeamId;
-import static TeamPacific.HQ.emitAttackMode;
 import static org.mockito.Mockito.*;
-import TeamPacific.*;
-
-import java.util.Map;
 
 public class landscaperTest {
 
@@ -64,8 +60,8 @@ public class landscaperTest {
     }
 
     @Test
-     public void testGetHqLoc() throws GameActionException {
-        MapLocation actualHq = Landscaper.getHqLoc(block);
+    public void testGetHqLoc() throws GameActionException {
+        MapLocation actualHq = Blockchain.getHqLoc(block);
         Assert.assertEquals(expectedHq, actualHq);
     }
 
@@ -88,9 +84,7 @@ public class landscaperTest {
 
     @Test
     public void testBuildWall() throws GameActionException {
-        // hard code the directions where the landscaper should be depositing dirt
         Direction[] buildingDirs = {Direction.NORTH, Direction.SOUTH, Direction.SOUTHWEST, Direction.NORTHWEST, Direction.CENTER};
-        // hard code landscaper location
         MapLocation currentLoc = new MapLocation(11,25);
         // mock landscaper ability to perform action this turn
         when(mockRC1.isReady()).thenReturn(true);
@@ -105,7 +99,7 @@ public class landscaperTest {
     @Test
     public void testCheckMessage() throws GameActionException {
         when(mockRC1.getBlock(10)).thenReturn(block1);
-        Landscaper.LandscaperTask actualState = Landscaper.checkMessage(block1);
+        Landscaper.LandscaperTask actualState = Landscaper.checkState(block1);
 
         Assert.assertEquals(Landscaper.LandscaperTask.OFFENSE_UNIT, actualState);
     }

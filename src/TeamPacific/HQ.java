@@ -5,21 +5,23 @@ import static TeamPacific.RobotPlayer.enemyHq;
 
 
 public class HQ extends Robot {
-	
-    static int minerCount;
-    static int numMiners;
 
-	public  HQ(RobotController rc) {
-		// TODO Auto-generated constructor stub
-		super(rc);
+    public static int minerCount;
+    public static int numMiners;
+    public static int maxMiner = 3;
+
+    public  HQ(RobotController rc) {
+        // TODO Auto-generated constructor stub
+        super(rc);
         minerCount = 0;
         numMiners = 0;
-	}
+        maxMiner = 4;
+    }
 
-	@Override
-	void run(int turnCount) throws GameActionException {
-		// TODO Auto-generated method stub
-     int maxMiner = 4;
+    @Override
+    public void run(int turnCount) throws GameActionException {
+        // TODO Auto-generated method stub
+        maxMiner = 4;
         switch (turnCount) {
             case 256:                 maxMiner = 5;                break;
             case 677:                 maxMiner = 6;                break;
@@ -43,7 +45,7 @@ public class HQ extends Robot {
                     wallHeight++;
                 }
             }
-            if (wallHeight >= 8) {
+            if (wallHeight >= 8 && enemyHq != null) {
                 emitAttackMode(enemyHq);
             }
         }
@@ -56,22 +58,35 @@ public class HQ extends Robot {
         //for (Team c : Team.values()) TODO: if miners die make more?
         //System.out.println(c); TODO: optimize miner creation.
 
-        for (RobotInfo kill : rc.senseNearbyRobots(GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED, rc.getTeam().opponent())) {
-            if (kill.type == RobotType.DELIVERY_DRONE && rc.canShootUnit(kill.ID)) {
-                rc.shootUnit(kill.ID);
+        RobotInfo[] kills = findOpponents();
+        for (RobotInfo kill : kills) {
+            if (kill.getType() == RobotType.DELIVERY_DRONE) {
+                shoot(kill);
             }
         }
-	}
+    }
 
-	static boolean emitHqLocation() throws GameActionException{
-	    int[] message;
-	    int cost = 10;
-	    message = foundResourceMessage(rc.getLocation(), MessageTo.Any, Resource.HomeHQ, false);
-	    if (rc.canSubmitTransaction(message, cost)){
-	        rc.submitTransaction(message, cost);
-	        return true;
+    public RobotInfo[] findOpponents(){
+        return rc.senseNearbyRobots(GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED, rc.getTeam().opponent());
+    }
+
+    public int shoot(RobotInfo kill) throws GameActionException {
+        int shot = 0;
+        if (rc.canShootUnit(kill.ID)) {
+            rc.shootUnit(kill.ID);
         }
-	    return false;
+        return shot;
+    }
+
+    static boolean emitHqLocation() throws GameActionException{
+        int[] message;
+        int cost = 10;
+        message = foundResourceMessage(rc.getLocation(), MessageTo.Any, Resource.HomeHQ, false);
+        if (rc.canSubmitTransaction(message, cost)){
+            rc.submitTransaction(message, cost);
+            return true;
+        }
+        return false;
     }
 
     public static void emitAttackMode(MapLocation enemyHq) throws GameActionException {
