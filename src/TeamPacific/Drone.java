@@ -61,11 +61,19 @@ public class Drone extends Robot {
                         // the location of own HQ.
                         // There are three type locations: Horizontal, Vertical, Diagonal
                         //   goToFindOwnHQ();
-                        
-                        if (forSureEnemyHQLoc == null) {
-                            goToEnemyHQ(0);
-   
-                        } else {
+                        while (forSureEnemyHQLoc == null && checkEnemyHQLocation < 3) {
+                            int searching = goToEnemyHQ(checkEnemyHQLocation);
+                            switch (searching) {
+                                case (-1):
+                                    System.out.println("still searching...");
+                                    break;
+                                case (-2):
+                                    System.out.println("not in the first location");
+                                    checkEnemyHQLocation++;
+                                    break;
+                            }
+                        }
+                        if (forSureEnemyHQLoc != null) {
                             currentState = States.PICK;
                         }
                     //}
@@ -184,40 +192,63 @@ public class Drone extends Robot {
         return false;
     }
 
-    public void goToEnemyHQ(int checkEnemyHQ) throws GameActionException {
-    	
-    	for( int i = 0; i < enemyHQLoc.size(); i++) {
-    		
-	        // Get the current Drone Location
-	        currentDroneLocation = rc.getLocation();
-	        // Get the enemy HQ Location, then the drone fly to enemy HQ
-	        MapLocation enemyHQLoca = enemyHQLoc.get(i);
-	        // Based on the vision radius chart, the greatest number id 20 for every robot can see
-	        // If the distance is greater than 20, then drone needs to move closer to the enemy HQ
-	        if (currentDroneLocation.distanceSquaredTo(enemyHQLoca) >= 20) {
-	            droneMove(rc.getLocation().directionTo(enemyHQLoca));
-	        } else {
-	            // If the enemy HQ is within drone's vision radius
-	            // Then need to check whether enemy HQ is there
-	
-	            // RobotInfo: Struct that stores basic information that was 'sensed' of another Robot.
-	            // senseRobotAtLocation(MapLocation loc): Senses the robot at the given location, or null if there is no robot there.
-	            // RobotInfo enemyHQ = rc.senseRobotAtLocation(enemyHQLoca);
-	            RobotInfo[] enemyHQNearByRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), rc.getTeam().opponent());
-	            System.out.println("The enemyHQ location: " + enemyHQLoca);
-	            for (RobotInfo each : enemyHQNearByRobots) {
-	                if (each.getType() == RobotType.HQ) {
-	                    findEnemyHQ = true;
-	                    forSureEnemyHQLoc = enemyHQLoca;
-	                    System.out.println("Find the enemy HQ!!");
-	                    break;
-	                }
-	            }
-	            if(forSureEnemyHQLoc != null) {
-	            	break;
-	            }
+    public int goToEnemyHQ(int checkEnemyHQ) throws GameActionException {
+        currentDroneLocation = rc.getLocation();
+        MapLocation tempLoc = enemyHQLoc.get(checkEnemyHQ);
+
+        if (rc.canSenseLocation(enemyHQLoc.get(checkEnemyHQ)) == false){
+            tryMoveTo(currentDroneLocation.directionTo(tempLoc));
+            return -1;
         }
+        else {
+            RobotInfo[] bots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), rc.getTeam().opponent());
+            if (bots.length > 0) {
+                for(RobotInfo bot : bots) {
+                    if (bot.type == RobotType.HQ) {
+                        findEnemyHQ = true;
+                        forSureEnemyHQLoc = bot.location;
+                        return 0;
+                    }
+                }
+            }
+
         }
+        return -2;
+
+
+
+//    	for( int i = 0; i < enemyHQLoc.size(); i++) {
+//
+//	        // Get the current Drone Location
+//	        currentDroneLocation = rc.getLocation();
+//	        // Get the enemy HQ Location, then the drone fly to enemy HQ
+//	        MapLocation enemyHQLoca = enemyHQLoc.get(i);
+//	        // Based on the vision radius chart, the greatest number id 20 for every robot can see
+//	        // If the distance is greater than 20, then drone needs to move closer to the enemy HQ
+//	        if (currentDroneLocation.distanceSquaredTo(enemyHQLoca) >= 20) {
+//	            droneMove(rc.getLocation().directionTo(enemyHQLoca));
+//	        } else {
+//	            // If the enemy HQ is within drone's vision radius
+//	            // Then need to check whether enemy HQ is there
+//
+//	            // RobotInfo: Struct that stores basic information that was 'sensed' of another Robot.
+//	            // senseRobotAtLocation(MapLocation loc): Senses the robot at the given location, or null if there is no robot there.
+//	            // RobotInfo enemyHQ = rc.senseRobotAtLocation(enemyHQLoca);
+//	            RobotInfo[] enemyHQNearByRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), rc.getTeam().opponent());
+//	            System.out.println("The enemyHQ location: " + enemyHQLoca);
+//	            for (RobotInfo each : enemyHQNearByRobots) {
+//	                if (each.getType() == RobotType.HQ) {
+//	                    findEnemyHQ = true;
+//	                    forSureEnemyHQLoc = enemyHQLoca;
+//	                    System.out.println("Find the enemy HQ!!");
+//	                    break;
+//	                }
+//	            }
+//	            if(forSureEnemyHQLoc != null) {
+//	            	break;
+//	            }
+//        }
+//        }
     }
 
     public boolean droneMove(Direction dir) throws GameActionException {
@@ -243,10 +274,19 @@ public class Drone extends Robot {
     public boolean tryMoveTo(Direction dir) throws GameActionException {
         // isReady(): Tests whether the robot can perform an action
         // canMove(Direction dir): Tells whether this robot can move one step in the given direction.
-        if (rc.isReady() && rc.canMove(dir)) {
-            // move(Direction dir): Moves one step in the given direction.
-            rc.move(dir);
-            return true;
+        if (rc.isReady()) {
+           if (rc.canMove(dir)) {
+               rc.move(dir);
+               return true;
+           }
+           else if (rc.canMove(dir.rotateLeft())) {
+               rc.move(dir.rotateLeft());
+               return true;
+           }
+           else if (rc.canMove(dir.rotateRight())) {
+               rc.move(dir.rotateRight());
+               return true;
+           }
         }
         return false;
     }

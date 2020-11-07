@@ -6,6 +6,8 @@ import battlecode.common.*;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static TeamPacific.Landscaper.tryDig;
 import static org.mockito.Mockito.*;
 
 public class landscaperTest {
@@ -92,6 +94,7 @@ public class landscaperTest {
 
         for (int i = 0; i < 5; i++ ) {
             when(mockRC1.canDepositDirt(buildingDirs[i])).thenReturn(true);
+            when(tryDig(buildingDirs[i])).thenReturn(true);
             Assert.assertEquals(true, Landscaper.buildWall(expectedHq, (i)));
         }
     }

@@ -50,8 +50,8 @@ public class Landscaper extends Robot {
         return awayFromBldg;
     }
 
-    static Direction[] findBuildDirs(Direction dir) {
-        Direction[] aroundBldg = new Direction[5];
+    static Direction[] findAdjacentDirs(Direction dir) {
+        Direction[] aroundBldg = new Direction[6];
         int index = 0;
         for (Direction d : Direction.allDirections()) {
             if ((Math.abs(d.dx - dir.dx) <= 1 && Math.abs(d.dy - dir.dy) <= 1) && d != dir) {
@@ -75,8 +75,9 @@ public class Landscaper extends Robot {
         System.out.println("building wall");
         MapLocation curr = rc.getLocation();
         Direction bldg = curr.directionTo(building);
-        Direction[] surround = findBuildDirs(bldg);
-        return tryDepositDirt(surround[turn % 5]);
+        Direction[] surrounding = findAdjacentDirs(bldg);
+        Direction toBuild = surrounding[turn % 5];
+        return tryDepositDirt(toBuild);
     }
 
     public static boolean tryDepositDirt(Direction dir) throws GameActionException {
@@ -91,7 +92,6 @@ public class Landscaper extends Robot {
     // build general tasks / skills for the landscaper
     static void runWallBuilder(int turnCount)  throws GameActionException {
 
-//        currentState = LandscaperTask.WALL_BUILDER;
         MapLocation curr = rc.getLocation();
         Direction[] awayFromHq;
 
@@ -103,42 +103,21 @@ public class Landscaper extends Robot {
                     tryMove(dirToHq.rotateRight());
                 }
             } else {
+                // if elevation at hq is getting buried, dig it out!
+                if (rc.senseElevation(locationHQ) > 0) {
+                    tryDig(curr.directionTo(locationHQ));
+                }
                 if (rc.getDirtCarrying() == 0) {
                     awayFromHq = Landscaper.findDigDirs(dirToHq);
                     tryDig(awayFromHq[turnCount % 3]);
-                } else if (turnCount > 15 &&
+                }
+                else if (turnCount > 50 &&
                         curr.directionTo(locationHQ) == Direction.EAST || curr.directionTo(locationHQ) == Direction.WEST) {
                     buildWall(locationHQ, turnCount);
                 }
             }
         }
         tryMove(randomDirection());
-    }
-
-    // TODO: activate other modes of landscaper action
-    static void runFloodPatrol(Landscaper patrol) throws GameActionException {
-
-        MapLocation curr = rc.getLocation();
-        Direction d = randomDirection();
-
-        if (!rc.senseFlooding(rc.adjacentLocation(d)) && rc.getDirtCarrying() != RobotType.LANDSCAPER.dirtLimit) {
-            patrol.tryDig(d);
-        }
-
-        else if (rc.senseFlooding(rc.adjacentLocation(d)) && curr.isWithinDistanceSquared(locationHQ, 18)) {
-            if (rc.getDirtCarrying() > 0) {
-                patrol.tryDepositDirt(d);
-            }
-            else
-                patrol.tryDig(randomDirection());
-        }
-
-        RobotInfo[] robots = rc.senseNearbyRobots(-1, rc.getTeam());
-        for (RobotInfo robot : robots) {
-            if (robot.type == RobotType.HQ) {
-                tryMove(curr.directionTo(robot.location));
-            }
-        }
     }
 
     static void runOffenseUnit(int turnCount) throws GameActionException {
@@ -168,6 +147,34 @@ public class Landscaper extends Robot {
 
         tryDig(randomDirection());
     }
+
+    // TODO: activate other modes of landscaper action
+    static void runFloodPatrol(Landscaper patrol) throws GameActionException {
+
+        MapLocation curr = rc.getLocation();
+        Direction d = randomDirection();
+
+        if (!rc.senseFlooding(rc.adjacentLocation(d)) && rc.getDirtCarrying() != RobotType.LANDSCAPER.dirtLimit) {
+            patrol.tryDig(d);
+        }
+
+        else if (rc.senseFlooding(rc.adjacentLocation(d)) && curr.isWithinDistanceSquared(locationHQ, 18)) {
+            if (rc.getDirtCarrying() > 0) {
+                patrol.tryDepositDirt(d);
+            }
+            else
+                patrol.tryDig(randomDirection());
+        }
+
+        RobotInfo[] robots = rc.senseNearbyRobots(-1, rc.getTeam());
+        for (RobotInfo robot : robots) {
+            if (robot.type == RobotType.HQ) {
+                tryMove(curr.directionTo(robot.location));
+            }
+        }
+    }
+
+
 
 
     public static LandscaperTask checkState(Transaction[] txns) throws GameActionException {

@@ -27,12 +27,16 @@ public class Miner extends Robot {
 	public static MapLocation lastTargetLoc;
 	static Direction[] dirList;
 	static int buildCount;
+	static int designCount;
+	static int fulfillmentCount;
 	static RobotType buildType;
 
 	Miner(RobotController rc) {
 		super(rc);
 		designSchoolCount = true;
 		buildCount = 0;
+		designCount = 0;
+		fulfillmentCount = 0;
 
 		setState(States.WANDER);
 
@@ -60,8 +64,8 @@ public class Miner extends Robot {
 			
 			//Build Design schools!
 			if ( rc.getTeamSoup() > 150 ) {
-				if ( (rc.getRoundNum() > 200 )  && (buildCount < 1) ) {
-					buildCount++;
+				if ( (rc.getRoundNum() > 100 )  && (designCount < 1) ) {
+					designCount++;
 					if(getState() != States.MOVE) {
 						prevState = getState();
 					}
@@ -70,8 +74,8 @@ public class Miner extends Robot {
 					//tryBuild(RobotType.DESIGN_SCHOOL, randomDirection());
 				}
 				
-				if ( (rc.getRoundNum() > 400) && buildCount < 2)  {
-					buildCount++;
+				if ( (rc.getRoundNum() > 200) && fulfillmentCount < 2)  {
+					fulfillmentCount++;
 					if(getState() != States.MOVE) {
 						prevState = getState();
 					}
