@@ -3,20 +3,13 @@ import java.util.*;
 
 import battlecode.common.*;
 
-import static TeamPacific.Blockchain.getHqLoc;
-
 public class Drone extends Robot {
-
-    Drone(RobotController rc) throws GameActionException {
-        super(rc);
-        pacificHQLocation = getHqLoc(rc.getBlock(1));
-    	goToFindEnemyHQ();
-        setState(States.FIND);
-    }
-
+	/* Variable(s) from robot:
+	 * - MapLocation teamHqLoc
+	 */
     // Drones states
-    enum States {
-        FIND, PICK, DROP;
+    public enum States {
+        FIND, PICK, DROP, OFFENSE;
     }
 
     public static States currentState = null;
@@ -24,7 +17,6 @@ public class Drone extends Robot {
 
     public static Direction tempDirection = null;
 
-    public static MapLocation pacificHQLocation;
     public static MapLocation enemyHQLocation;
     public static MapLocation currentDroneLocation;
     public static MapLocation landscapersLoc = null;
@@ -35,21 +27,24 @@ public class Drone extends Robot {
     public static boolean haveLandscapers = false;
 
     public static int checkEnemyHQLocation = 0;
+    public ArrayList<MapLocation> enemyHQLoc = new ArrayList<>(3);
+    public MapLocation forSureEnemyHQLoc = null;
 
-
-    ArrayList<MapLocation> enemyHQLoc = new ArrayList<>(3);
-    MapLocation forSureEnemyHQLoc = null;
-
-    static States getState() {
+    public static States getState() {
         return currentState;
     }
-
-    static void setState(States aState) {
+    public static void setState(States aState) {
         currentState = aState;
     }
 
+    public Drone(RobotController rc) throws GameActionException {
+        super(rc);
+    	goToFindEnemyHQ();
+        setState(States.FIND);
+    }
+
     @Override
-    void run(int turnCount) throws GameActionException {
+    public void run(int turnCount) throws GameActionException {
         // isReady(): Tests whether the robot can perform an action
     	System.out.println(getState());
         if(rc.isReady()) {
@@ -76,18 +71,36 @@ public class Drone extends Robot {
                         if (forSureEnemyHQLoc != null) {
                             currentState = States.PICK;
                         }
+
                     //}
                     break;
 
                 case PICK:
-                    // Go to the Enemy HQ
-        	        if (currentDroneLocation.distanceSquaredTo(forSureEnemyHQLoc) >= 20) {
-        	            droneMove(rc.getLocation().directionTo(forSureEnemyHQLoc));
-        	        }
-                    // Pick up enemy's landscaper
-                    if (!enemyLandscapers && isLandscapersAround()) {
-                        pickUpLandscapers();
+
+                    // either pick up our landscapers or opponent landscapers
+                    if (!rc.isCurrentlyHoldingUnit()) {
+                        if (rc.canSenseLocation(teamHqLoc)) {
+                            RobotInfo[] robots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), ourTeam);
+                            if (robots.length > 0) {
+                                for (RobotInfo robot : robots) {
+                                    if (robot.type == RobotType.LANDSCAPER) {
+                                        pickUpLandscapers(ourTeam);
+                                    }
+                                }
+                            }
+                        }
                     }
+                    else {
+
+                    }
+                    // Go to the Enemy HQ
+//        	        if (currentDroneLocation.distanceSquaredTo(forSureEnemyHQLoc) >= 20) {
+//        	            droneMove(rc.getLocation().directionTo(forSureEnemyHQLoc));
+//        	        }
+                    // Pick up enemy's landscaper
+//                    if (!enemyLandscapers && isLandscapersAround()) {
+//                        pickUpLandscapers();
+//                    }
                     break;
 
                 case DROP:
@@ -98,31 +111,16 @@ public class Drone extends Robot {
         }
     }
 
-    public void goToFindOwnHQ() throws GameActionException {
-        if (pacificHQLocation == null) {
-            // senseNearbyRobots(): Returns all robots within sense radius
-            nearbyRobots = rc.senseNearbyRobots();
-            for (RobotInfo robot : nearbyRobots) {
-                // RobotType: the type of the robot
-                // getTeam(): returns this robot's Team
-                if (robot.type == RobotType.HQ && robot.team == rc.getTeam()) {
-                    // location: The current location of the robot
-                    pacificHQLocation = robot.location;
-                }
-            }
-        }
-    }
-
     public void goToFindEnemyHQ() throws GameActionException {
-        //  if(pacificHQLocation != null) {
-        int pacificHQLocation_X = pacificHQLocation.x;
-        int pacificHQLocation_y = pacificHQLocation.y;
+        //  if(teamHqLoc != null) {
+        int teamHqLoc_X = teamHqLoc.x;
+        int teamHqLoc_y = teamHqLoc.y;
         int map_width = rc.getMapWidth();
         int map_height = rc.getMapHeight();
-        enemyHQLoc.add(new MapLocation(map_width-pacificHQLocation_X, pacificHQLocation_y));  //Horizontal
-        enemyHQLoc.add(new MapLocation(pacificHQLocation_X, map_height-pacificHQLocation_y)); //Vertical
-        enemyHQLoc.add(new MapLocation(map_width-pacificHQLocation_X, map_height-pacificHQLocation_y)); //Diagonal
-        //System.out.println(enemyHQLoc);
+        enemyHQLoc.add(new MapLocation(map_width-(teamHqLoc_X+1), teamHqLoc_y));  //Horizontal
+        enemyHQLoc.add(new MapLocation(teamHqLoc_X, map_height-(teamHqLoc_y+1))); //Vertical
+        enemyHQLoc.add(new MapLocation(map_width-(teamHqLoc_X+1), map_height-(teamHqLoc_y+1))); //Diagonal
+        System.out.println("Possible enemy locs: " + enemyHQLoc);
         //  }
     }
 
@@ -141,18 +139,18 @@ public class Drone extends Robot {
         return false;
     }
 
-    public boolean pickUpLandscapers() throws GameActionException {
+    public boolean pickUpLandscapers(Team team) throws GameActionException {
         // Find landscapers
         int landscaperId = -1;
         RobotInfo[] robots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared());
         for (RobotInfo bots : robots) {
-            if (bots.type == RobotType.LANDSCAPER) {
+            if (bots.type == RobotType.LANDSCAPER && bots.team == team) {
                 // getID(): Returns the ID of the landscaper
                 landscaperId = bots.getID();
                 // getLocation(): Returns the landscaper's current location
                 landscapersLoc = new MapLocation(bots.getLocation().x, bots.getLocation().y);
                 if (landscaperId >= 0) {
-                    if(rc.getLocation().isAdjacentTo(landscapersLoc) == true && rc.canPickUpUnit(landscaperId) == true) {
+                    if(rc.getLocation().isAdjacentTo(landscapersLoc) && rc.canPickUpUnit(landscaperId)) {
                         // pickUpUnit(int id): Picks up another unit, the id of the robot to pick up
                         rc.pickUpUnit(landscaperId);
                         haveLandscapers = true;
@@ -195,8 +193,8 @@ public class Drone extends Robot {
     public int goToEnemyHQ(int checkEnemyHQ) throws GameActionException {
         currentDroneLocation = rc.getLocation();
         MapLocation tempLoc = enemyHQLoc.get(checkEnemyHQ);
-
-        if (rc.canSenseLocation(enemyHQLoc.get(checkEnemyHQ)) == false){
+        System.out.println("Looking for :" + enemyHQLoc);
+        if (!rc.canSenseLocation(enemyHQLoc.get(checkEnemyHQ))){
             tryMoveTo(currentDroneLocation.directionTo(tempLoc));
             return -1;
         }
@@ -204,7 +202,7 @@ public class Drone extends Robot {
             RobotInfo[] bots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), rc.getTeam().opponent());
             if (bots.length > 0) {
                 for(RobotInfo bot : bots) {
-                    if (bot.type == RobotType.HQ) {
+                    if (bot.getType() == RobotType.HQ) {
                         findEnemyHQ = true;
                         forSureEnemyHQLoc = bot.location;
                         return 0;
@@ -214,41 +212,6 @@ public class Drone extends Robot {
 
         }
         return -2;
-
-
-
-//    	for( int i = 0; i < enemyHQLoc.size(); i++) {
-//
-//	        // Get the current Drone Location
-//	        currentDroneLocation = rc.getLocation();
-//	        // Get the enemy HQ Location, then the drone fly to enemy HQ
-//	        MapLocation enemyHQLoca = enemyHQLoc.get(i);
-//	        // Based on the vision radius chart, the greatest number id 20 for every robot can see
-//	        // If the distance is greater than 20, then drone needs to move closer to the enemy HQ
-//	        if (currentDroneLocation.distanceSquaredTo(enemyHQLoca) >= 20) {
-//	            droneMove(rc.getLocation().directionTo(enemyHQLoca));
-//	        } else {
-//	            // If the enemy HQ is within drone's vision radius
-//	            // Then need to check whether enemy HQ is there
-//
-//	            // RobotInfo: Struct that stores basic information that was 'sensed' of another Robot.
-//	            // senseRobotAtLocation(MapLocation loc): Senses the robot at the given location, or null if there is no robot there.
-//	            // RobotInfo enemyHQ = rc.senseRobotAtLocation(enemyHQLoca);
-//	            RobotInfo[] enemyHQNearByRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), rc.getTeam().opponent());
-//	            System.out.println("The enemyHQ location: " + enemyHQLoca);
-//	            for (RobotInfo each : enemyHQNearByRobots) {
-//	                if (each.getType() == RobotType.HQ) {
-//	                    findEnemyHQ = true;
-//	                    forSureEnemyHQLoc = enemyHQLoca;
-//	                    System.out.println("Find the enemy HQ!!");
-//	                    break;
-//	                }
-//	            }
-//	            if(forSureEnemyHQLoc != null) {
-//	            	break;
-//	            }
-//        }
-//        }
     }
 
     public boolean droneMove(Direction dir) throws GameActionException {

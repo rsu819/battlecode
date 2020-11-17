@@ -8,7 +8,7 @@ public class DesignSchool extends Robot{
 
     static int buildCountD = 0;
 
-    public DesignSchool(RobotController rc) {
+    public DesignSchool(RobotController rc) throws GameActionException {
         super(rc);
     }
 

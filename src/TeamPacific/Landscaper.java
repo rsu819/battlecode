@@ -9,8 +9,11 @@ import static TeamPacific.Blockchain.*;
 import static TeamPacific.RobotPlayer.*;
 
 public class Landscaper extends Robot {
+	/* Variable(s) from robot:
+	 * - MapLocation teamHqLoc
+	 */
+	
     // data members
-    static MapLocation locationHQ = null;
     static LandscaperTask currentState = null;
 
     public enum LandscaperTask{
@@ -19,7 +22,7 @@ public class Landscaper extends Robot {
         FLOOD_PATROL
     }
 
-    public Landscaper(RobotController rc) {
+    public Landscaper(RobotController rc) throws GameActionException {
         super(rc);
         currentState = LandscaperTask.WALL_BUILDER;
     }
@@ -27,9 +30,6 @@ public class Landscaper extends Robot {
     @Override
     void run(int turnCount) throws GameActionException {
         // TODO Auto-generated method stub
-        if (locationHQ == null) {
-            locationHQ = getHqLoc(rc.getBlock(1));
-        }
 
         if (rc.getRoundNum() % 10 == 1) {
             Transaction[] block = rc.getBlock(rc.getRoundNum() - 1);
@@ -95,25 +95,26 @@ public class Landscaper extends Robot {
         MapLocation curr = rc.getLocation();
         Direction[] awayFromHq;
 
-        if (locationHQ != null) {
-            Direction dirToHq = curr.directionTo(locationHQ);
-            if (!curr.isAdjacentTo(locationHQ)) {
+        if (teamHqLoc != null) {
+            Direction dirToHq = curr.directionTo(teamHqLoc);
+            if (!curr.isAdjacentTo(teamHqLoc)) {
                 if (tryMove(dirToHq) == false) {
                     tryMove(dirToHq.rotateLeft());
                     tryMove(dirToHq.rotateRight());
                 }
             } else {
                 // if elevation at hq is getting buried, dig it out!
-                if (rc.senseElevation(locationHQ) > 0) {
-                    tryDig(curr.directionTo(locationHQ));
+                if (rc.senseNearbyRobots(8, rc.getTeam().opponent()).length > 0) {
+                    System.out.println("unbury hq");
+                    tryDig(curr.directionTo(teamHqLoc));
                 }
                 if (rc.getDirtCarrying() == 0) {
                     awayFromHq = Landscaper.findDigDirs(dirToHq);
                     tryDig(awayFromHq[turnCount % 3]);
                 }
                 else if (turnCount > 50 &&
-                        curr.directionTo(locationHQ) == Direction.EAST || curr.directionTo(locationHQ) == Direction.WEST) {
-                    buildWall(locationHQ, turnCount);
+                        curr.directionTo(teamHqLoc) == Direction.EAST || curr.directionTo(teamHqLoc) == Direction.WEST) {
+                    buildWall(teamHqLoc, turnCount);
                 }
             }
         }
@@ -158,7 +159,7 @@ public class Landscaper extends Robot {
             patrol.tryDig(d);
         }
 
-        else if (rc.senseFlooding(rc.adjacentLocation(d)) && curr.isWithinDistanceSquared(locationHQ, 18)) {
+        else if (rc.senseFlooding(rc.adjacentLocation(d)) && curr.isWithinDistanceSquared(teamHqLoc, 18)) {
             if (rc.getDirtCarrying() > 0) {
                 patrol.tryDepositDirt(d);
             }

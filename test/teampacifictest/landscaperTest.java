@@ -6,6 +6,7 @@ import battlecode.common.*;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.scalactic.Or;
 
 import static TeamPacific.Landscaper.tryDig;
 import static org.mockito.Mockito.*;
@@ -20,7 +21,7 @@ public class landscaperTest {
 
 
     @BeforeClass
-    public static void setupLandscaperTest() {
+    public static void setupLandscaperTest() throws GameActionException {
 
         // instantiate mock RobotController for testing only
         mockRC1 = mock(RobotController.class);

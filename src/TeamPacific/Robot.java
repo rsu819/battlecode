@@ -2,8 +2,9 @@ package TeamPacific;
 import java.util.Arrays;
 
 import battlecode.common.*;
+import static TeamPacific.Blockchain.getHqLoc;
 
-abstract class Robot {
+public abstract class Robot {
 	
     static Direction[] directions = {
             Direction.NORTH,
@@ -17,15 +18,23 @@ abstract class Robot {
     };
 	
     static RobotController rc;
+    static MapLocation teamHqLoc;
+    static Team ourTeam;
     
-    Robot(RobotController rc) {
+    Robot(RobotController rc) throws GameActionException {
     	this.rc = rc;
+    	
+    	//Prevent the hq from trying to get it's own location
+    	if(rc.getType() != RobotType.HQ) {
+    		teamHqLoc = getHqLoc(rc.getBlock(1));
+    	}
+    	ourTeam = rc.getTeam();
     }
     
     abstract void run(int turnCount) throws GameActionException;
 
     // Will give the nearest object given a list of MapLocations
-    static MapLocation findNearest(MapLocation currLoc, MapLocation[] locations) {
+    public static MapLocation findNearest(MapLocation currLoc, MapLocation[] locations) {
 
         MapLocation tempLocation = new MapLocation( -1, -1);
         int nearest = -1;
@@ -44,7 +53,7 @@ abstract class Robot {
     }
     
     // Will give the nearest object of a given type(s)
-    static MapLocation findNearest(MapLocation currLoc, RobotInfo[] robotList, RobotType[] targetTypes, Team targetTeam) {
+    public static MapLocation findNearest(MapLocation currLoc, RobotInfo[] robotList, RobotType[] targetTypes, Team targetTeam) {
 
         MapLocation tempLocation = new MapLocation( -1, -1);
         int nearest = -1;
@@ -67,7 +76,7 @@ abstract class Robot {
     }
     
     // Will return a list of all directions in a 180 degree angle of the given direction
-    static Direction[] getFrontDirections(Direction aDirection) {
+    public static Direction[] getFrontDirections(Direction aDirection) {
 
         Direction[] dirList = new Direction[4];
 
@@ -80,7 +89,7 @@ abstract class Robot {
     }
 	
     // Returns a random direction
-    static Direction randomDirection() {
+    public static Direction randomDirection() {
         return directions[(int) (Math.random() * directions.length)];
     }
     
@@ -90,16 +99,30 @@ abstract class Robot {
                 return true;
         return false;
     }
-
-    static boolean tryMove(Direction dir) throws GameActionException {
+    
+    /**
+     * Attempts to move in a given direction.
+     *
+     * @param dir The intended direction of movement
+     * @return true if a move was performed
+     * @throws GameActionException
+     */
+    public static boolean tryMove(Direction dir) throws GameActionException {
         System.out.println("I am trying to move " + dir + "; " + rc.isReady() + " " + rc.getCooldownTurns() + " " + rc.canMove(dir));
         if (rc.isReady() && rc.canMove(dir) && !rc.senseFlooding(rc.adjacentLocation(dir))) {
             rc.move(dir);
             return true;
-        }
-        return false;
+        } else return false;
     }
 
+    /**
+     * Attempts to build a given robot in a given direction.
+     *
+     * @param type The type of the robot to build
+     * @param dir The intended direction of movement
+     * @return true if a move was performed
+     * @throws GameActionException
+     */
     public static boolean tryBuild(RobotType type, Direction dir) throws GameActionException {
         if (rc.isReady() && rc.canBuildRobot(type, dir)) {
             rc.buildRobot(type, dir);

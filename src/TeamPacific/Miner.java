@@ -6,16 +6,13 @@ import static TeamPacific.Blockchain.*;
 
 public class Miner extends Robot {
 
-	enum States {
+	public enum States {
 		WANDER, MINE, REFINE, MOVE, BUILD;
 	}
-
-	static MapLocation locationHQ;
 
 	static MapLocation closestRefinery;
 	static boolean designSchoolCount;
 
-	static int SOUPCARRYMAX = 100;
 	static Random randomGen = new Random();
 	public static States currentState = null;
 	public static States prevState = null;
@@ -26,27 +23,37 @@ public class Miner extends Robot {
 	public static MapLocation currentTargetLoc = new MapLocation( -1, -1);
 	public static MapLocation lastTargetLoc;
 	static Direction[] dirList;
-	static int buildCount;
-	static int designCount;
-	static int fulfillmentCount;
+	public static int buildCount;
 	static RobotType buildType;
 
-	Miner(RobotController rc) {
+	
+	public Miner(RobotController rc) throws GameActionException {
 		super(rc);
 		designSchoolCount = true;
 		buildCount = 0;
-		designCount = 0;
-		fulfillmentCount = 0;
 
 		setState(States.WANDER);
 
 		//Find the location of the HQ
 		RobotType[] tempArray = {RobotType.HQ};
-		locationHQ = findNearest(rc.getLocation(), rc.senseNearbyRobots(), tempArray, rc.getTeam());
-		closestRefinery = locationHQ;
+		closestRefinery = teamHqLoc;;
 	}
+	
+	/* Used for testing
+	public Miner(RobotController rc) {
+		super(rc);
+		designSchoolCount = true;
+		buildCount = 0;
 
-	static States getState() {
+		setState(States.WANDER);
+
+		//Find the location of the HQ
+		//RobotType[] tempArray = {RobotType.HQ};
+		//teamHqLoc; = findNearest(rc.getLocation(), rc.senseNearbyRobots(), tempArray, rc.getTeam());
+		//closestRefinery = teamHqLoc;;
+	}*/
+
+	public static States getState() {
 		return currentState;
 	}
 
@@ -54,7 +61,7 @@ public class Miner extends Robot {
 		currentState = aState;
 	}
 
-	void run(int turnCount) throws GameActionException {
+	public void run(int turnCount) throws GameActionException {
 
 		System.out.println(currentState);
 		//System.out.println("My current state is: " + currentState);
@@ -64,8 +71,8 @@ public class Miner extends Robot {
 			
 			//Build Design schools!
 			if ( rc.getTeamSoup() > 150 ) {
-				if ( (rc.getRoundNum() > 100 )  && (designCount < 1) ) {
-					designCount++;
+				if ( (rc.getRoundNum() > 200 )  && (buildCount < 1) ) {
+					buildCount += 1;
 					if(getState() != States.MOVE) {
 						prevState = getState();
 					}
@@ -74,8 +81,8 @@ public class Miner extends Robot {
 					//tryBuild(RobotType.DESIGN_SCHOOL, randomDirection());
 				}
 				
-				if ( (rc.getRoundNum() > 200) && fulfillmentCount < 2)  {
-					fulfillmentCount++;
+				if ( (rc.getRoundNum() > 400) && buildCount < 2)  {
+					buildCount += 1;
 					if(getState() != States.MOVE) {
 						prevState = getState();
 					}
@@ -144,7 +151,7 @@ public class Miner extends Robot {
 				//Stay put and mine nearby soup
 				case MINE:
 
-					if (rc.getSoupCarrying() >= SOUPCARRYMAX) {
+					if (rc.getSoupCarrying() >= RobotType.MINER.soupLimit) {
 						lastTargetLoc = currentTargetLoc;
 						setState(States.REFINE);
 					} else {
@@ -196,6 +203,7 @@ public class Miner extends Robot {
 					}
 					
 					//System.out.println("I'm moving towards: " + currentTargetLoc);
+					//System.out.println("I'm moving towards: " + tempDir);
 					if(rc.adjacentLocation(tempDir).equals(currentTargetLoc)) {
 						setState(prevState);
 					} else {
@@ -268,11 +276,11 @@ public class Miner extends Robot {
 				// Used to exclusively build design schools for now
 				case BUILD:
 
-					tempDir = rc.getLocation().directionTo(locationHQ);
+					tempDir = rc.getLocation().directionTo(teamHqLoc);
 
-					if ((locationHQ.distanceSquaredTo(rc.adjacentLocation(tempDir.opposite())) >= 4) && (locationHQ.distanceSquaredTo(rc.adjacentLocation(tempDir)) < 16) ){
+					if ((teamHqLoc.distanceSquaredTo(rc.adjacentLocation(tempDir.opposite())) >= 4) && (teamHqLoc.distanceSquaredTo(rc.adjacentLocation(tempDir)) < 16) ){
 						if (tryBuild(buildType, tempDir.opposite())) {
-							buildCount++;
+							buildCount += 1;
 							setState(prevState);
 						} else {
 							setState(prevState);
@@ -289,16 +297,17 @@ public class Miner extends Robot {
 						} else {
 							lastDir = tempDir;
 						}
-						tempDir = rc.getLocation().directionTo(locationHQ);
+						tempDir = rc.getLocation().directionTo(teamHqLoc);
 					}
 
 					break;
 			}
 		}
+		//return;
 	}
 	
     // Will give the nearest soup, filters out soup that is inaccessible
-    static MapLocation findNearestSoup(MapLocation currLoc, MapLocation[] locations) throws GameActionException {
+    public static MapLocation findNearestSoup(MapLocation currLoc, MapLocation[] locations) throws GameActionException {
 
         MapLocation tempLocation = new MapLocation( -1, -1);
         int nearest = -1;
@@ -395,4 +404,5 @@ public class Miner extends Robot {
 		}
 		return null;
 	}
+
 }

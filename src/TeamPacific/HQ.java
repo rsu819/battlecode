@@ -10,7 +10,7 @@ public class HQ extends Robot {
     public static int numMiners;
     public static int maxMiner = 3;
 
-    public  HQ(RobotController rc) {
+    public  HQ(RobotController rc) throws GameActionException {
         // TODO Auto-generated constructor stub
         super(rc);
         minerCount = 0;
@@ -45,7 +45,7 @@ public class HQ extends Robot {
                     wallHeight++;
                 }
             }
-            if (wallHeight >= 8 && enemyHq != null) {
+            if (wallHeight >= 8) {
                 emitAttackMode(enemyHq);
             }
         }
@@ -78,7 +78,7 @@ public class HQ extends Robot {
         return shot;
     }
 
-    static boolean emitHqLocation() throws GameActionException{
+    public static boolean emitHqLocation() throws GameActionException{
         int[] message;
         int cost = 10;
         message = foundResourceMessage(rc.getLocation(), MessageTo.Any, Resource.HomeHQ, false);

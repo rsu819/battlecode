@@ -8,7 +8,7 @@ public class FulfillmentCenter extends Robot{
 
     static int buildCountF = 0;
 
-    public FulfillmentCenter(RobotController rc) {
+    public FulfillmentCenter(RobotController rc) throws GameActionException {
         super(rc);
     }
 

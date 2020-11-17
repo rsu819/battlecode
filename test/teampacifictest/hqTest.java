@@ -17,7 +17,7 @@ public class hqTest {
     static RobotInfo[] RI;
 
     @BeforeClass
-    public static void setupHQTest() {
+    public static void setupHQTest() throws GameActionException {
         rc = mock(RobotController.class);
         hq = new HQ(rc);
 

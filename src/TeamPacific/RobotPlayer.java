@@ -27,6 +27,7 @@ public strictfp class RobotPlayer {
     static Landscaper landscaper;
     static Miner miner;
     static Drone drone;
+    static NetGun netGun;
     static DesignSchool designSchool;
     static FulfillmentCenter fulfillmentCenter;
     public static MapLocation enemyHq;
@@ -53,16 +54,19 @@ public strictfp class RobotPlayer {
         //Used to initialize some robots
         switch (rc.getType()) {
             case HQ:
-                hq = new TeamPacific.HQ(rc);
+                hq = new HQ(rc);
                 break;
             case LANDSCAPER:
-                landscaper = new TeamPacific.Landscaper(rc);
+                landscaper = new Landscaper(rc);
                 break;
             case MINER:
-                miner = new TeamPacific.Miner(rc);
+                miner = new Miner(rc);
                 break;
             case DELIVERY_DRONE:
                 drone = new Drone(rc);
+                break;
+            case NET_GUN:
+                netGun = new NetGun(rc);
                 break;
             case DESIGN_SCHOOL:
                 designSchool = new DesignSchool(rc);
@@ -82,15 +86,33 @@ public strictfp class RobotPlayer {
                 // You can add the missing ones or rewrite this into your own control structure.
                 //System.out.println("I'm a " + rc.getType() + "! Location " + rc.getLocation());
                 switch (rc.getType()) {
-                    case HQ:                 hq.run(turnCount);                 break;
-                    case MINER:              miner.run(turnCount);   		    break;
-                    case LANDSCAPER:         landscaper.run(turnCount);         break;
-                    case DELIVERY_DRONE:     drone.run(turnCount);     		    break;
-                    case DESIGN_SCHOOL:      designSchool.run(turnCount);       break;
-                    case FULFILLMENT_CENTER: fulfillmentCenter.run(turnCount);  break;
-                    case NET_GUN:            runNetGun();            		    break;
-                    case REFINERY:           runRefinery();				 	    break;
-                    case VAPORATOR:          runVaporator();         		    break;
+                    case HQ:
+                        hq.run(turnCount);
+                        break;
+                    case MINER:
+                        miner.run(turnCount);
+                        break;
+                    case LANDSCAPER:
+                        landscaper.run(turnCount);
+                        break;
+                    case DELIVERY_DRONE:
+                        drone.run(turnCount);
+                        break;
+                    case DESIGN_SCHOOL:
+                        designSchool.run(turnCount);
+                        break;
+                    case FULFILLMENT_CENTER:
+                        fulfillmentCenter.run(turnCount);
+                        break;
+                    case NET_GUN:
+                        netGun.run(turnCount);
+                        break;
+                    case REFINERY:
+                        runRefinery();
+                        break;
+                    case VAPORATOR:
+                        runVaporator();
+                        break;
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -110,9 +132,4 @@ public strictfp class RobotPlayer {
     static void runVaporator() throws GameActionException {
 
     }
-
-    static void runNetGun() throws GameActionException {
-
-    }
-
 }

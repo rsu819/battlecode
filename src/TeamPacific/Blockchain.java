@@ -2,6 +2,8 @@ package TeamPacific;
 
 import battlecode.common.*;
 
+import java.util.*;
+
 import static TeamPacific.RobotPlayer.rc;
 
 // class methods for RobotController to use Blockchain.
@@ -52,14 +54,17 @@ public class Blockchain {
 
     public static MapLocation getHqLoc(Transaction[] txns) throws GameActionException{
 
-        for (Transaction txn : txns) {
-            int[] message = txn.getMessage();
-            if (message[0] == TeamId && message[2] == Resource.HomeHQ) {
-                MapLocation hq = new MapLocation(message[3], message[4]);
-                System.out.println("Found HQ: " + hq.x + ", " + hq.y);
-                return hq;
-            }
-        }
+    	//Needed if statement for tests
+    	if(txns != null) {
+	        for (Transaction txn : txns) {
+	            int[] message = txn.getMessage();
+	            if (message[0] == TeamId && message[2] == Resource.HomeHQ) {
+	                MapLocation hq = new MapLocation(message[3], message[4]);
+	                System.out.println("Found HQ: " + hq.x + ", " + hq.y);
+	                return hq;
+	            }
+	        }
+    	}
         return null;
     }
 
