@@ -1,7 +1,11 @@
 package TeamPacific;
+import TeamPacific.Drone;
+import TeamPacific.HQ;
+import TeamPacific.Landscaper;
+import TeamPacific.Miner;
+import TeamPacific.NetGun;
 import battlecode.common.*;
-
-import static TeamPacific.Blockchain.TeamId;
+import static TeamPacific.Blockchain.*;
 
 public strictfp class RobotPlayer {
     static RobotController rc;
@@ -26,10 +30,12 @@ public strictfp class RobotPlayer {
     static HQ hq;
     static Landscaper landscaper;
     static Miner miner;
-    static Drone drone;
-    static NetGun netGun;
+    static TeamPacific.Drone drone;
+    static TeamPacific.NetGun netGun;
     static DesignSchool designSchool;
     static FulfillmentCenter fulfillmentCenter;
+    static Refinery refinery;
+    static Vaporator vaporator;
     public static MapLocation enemyHq;
 
     /**
@@ -74,6 +80,12 @@ public strictfp class RobotPlayer {
             case FULFILLMENT_CENTER:
                 fulfillmentCenter = new FulfillmentCenter(rc);
                 break;
+            case REFINERY:
+                refinery = new Refinery(rc);
+                break;
+            case VAPORATOR:
+                vaporator = new Vaporator(rc);
+                break;
         }
 
         while (true) {
@@ -108,10 +120,10 @@ public strictfp class RobotPlayer {
                         netGun.run(turnCount);
                         break;
                     case REFINERY:
-                        runRefinery();
+                        refinery.run(turnCount);
                         break;
                     case VAPORATOR:
-                        runVaporator();
+                        vaporator.run(turnCount);
                         break;
                 }
 
@@ -123,13 +135,5 @@ public strictfp class RobotPlayer {
                 e.printStackTrace();
             }
         }
-    }
-
-    static void runRefinery() throws GameActionException {
-        //System.out.println("Pollution: " + rc.sensePollution(rc.getLocation()));
-    }
-
-    static void runVaporator() throws GameActionException {
-
     }
 }

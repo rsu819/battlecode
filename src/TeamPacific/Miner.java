@@ -1,12 +1,12 @@
 package TeamPacific;
 import java.util.Random;
 
+import TeamPacific.Robot;
 import battlecode.common.*;
 import static TeamPacific.Blockchain.*;
-
 public class Miner extends Robot {
 
-	public enum States {
+	public static enum States {
 		WANDER, MINE, REFINE, MOVE, BUILD;
 	}
 
@@ -71,7 +71,7 @@ public class Miner extends Robot {
 			
 			//Build Design schools!
 			if ( rc.getTeamSoup() > 150 ) {
-				if ( (rc.getRoundNum() > 200 )  && (buildCount < 1) ) {
+				if ( buildCount < 1 ) {
 					buildCount += 1;
 					if(getState() != States.MOVE) {
 						prevState = getState();
@@ -79,9 +79,7 @@ public class Miner extends Robot {
 					buildType = RobotType.DESIGN_SCHOOL;
 					setState(States.BUILD);
 					//tryBuild(RobotType.DESIGN_SCHOOL, randomDirection());
-				}
-				
-				if ( (rc.getRoundNum() > 400) && buildCount < 2)  {
+				} else if ( buildCount <= 2 )  {
 					buildCount += 1;
 					if(getState() != States.MOVE) {
 						prevState = getState();

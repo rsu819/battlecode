@@ -2,7 +2,6 @@ package teampacifictest;
 
 import TeamPacific.HQ;
 import battlecode.common.*;
-import battlecode.common.RobotController;
 import org.junit.BeforeClass;
 import org.mockito.Mockito;
 import org.junit.*;
@@ -15,6 +14,7 @@ public class hqTest {
     static RobotController rc;
     static RobotInfo kill;
     static RobotInfo[] RI;
+    static int senseRadius;
 
     @BeforeClass
     public static void setupHQTest() throws GameActionException {
@@ -25,6 +25,8 @@ public class hqTest {
                 Team.B, RobotType.DELIVERY_DRONE, 0, false, 0, 0,
                 0, new MapLocation(1, 1));
         RI = new RobotInfo[] {kill};
+
+        senseRadius = rc.getCurrentSensorRadiusSquared();
     }
 
     @Test
@@ -36,7 +38,7 @@ public class hqTest {
     public void testRunMaxMiner() throws GameActionException {
         when(rc.getTeam()).thenReturn(Team.A);
         when(rc.getTeam().opponent()).thenReturn(Team.B);
-        when(rc.senseNearbyRobots(GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED, rc.getTeam().opponent())).thenReturn(RI);
+        when(rc.senseNearbyRobots(senseRadius, rc.getTeam().opponent())).thenReturn(RI);
 
         int counter = 0;
         while (counter < 3020) {
@@ -51,7 +53,7 @@ public class hqTest {
     public void testRunBuildsMiner() throws GameActionException {
         when(rc.getTeam()).thenReturn(Team.A);
         when(rc.getTeam().opponent()).thenReturn(Team.B);
-        when(rc.senseNearbyRobots(GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED, rc.getTeam().opponent())).thenReturn(RI);
+        when(rc.senseNearbyRobots(senseRadius, rc.getTeam().opponent())).thenReturn(RI);
         for (Direction dir : directions) {
             when(hq.tryBuild(RobotType.MINER, dir)).thenReturn(true);
         }
@@ -71,7 +73,7 @@ public class hqTest {
     public void testFindNoOpponents() {
         boolean noKill = false;
         HQ hq = Mockito.mock(HQ.class);
-        if(hq.findOpponents() == null){noKill = true;}
+        if(hq.findOpponents(senseRadius) == null){noKill = true;}
         assertTrue("HQ found no opponents", noKill);
     }
 
@@ -79,15 +81,11 @@ public class hqTest {
     public void testFindOpponents() {
         boolean kills = false;
 
-        when(rc.getTeam())
-                .thenReturn(Team.A);
-        when(rc.getTeam().opponent())
-                .thenReturn(Team.B);
-        when(rc.senseNearbyRobots(GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED,
-                rc.getTeam().opponent()))
-                .thenReturn(RI);
-        if(hq.findOpponents() != null){kills = true;}// This or the one below. this is false the one below is true.
-        //if(rc.senseNearbyRobots(GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED, rc.getTeam().opponent()) != null){kills = true;}
+        when(rc.getTeam()).thenReturn(Team.A);
+        when(rc.getTeam().opponent()).thenReturn(Team.B);
+        when(rc.senseNearbyRobots(senseRadius, rc.getTeam().opponent())).thenReturn(RI);
+        if(hq.findOpponents(senseRadius) != null){kills = true;}
+
         assertTrue("HQ found opponents", kills);
     }
 

@@ -5,7 +5,7 @@ import battlecode.common.*;
 import static TeamPacific.Blockchain.getHqLoc;
 
 public abstract class Robot {
-	
+
     static Direction[] directions = {
             Direction.NORTH,
             Direction.NORTHEAST,
@@ -16,21 +16,21 @@ public abstract class Robot {
             Direction.WEST,
             Direction.NORTHWEST
     };
-	
+
     static RobotController rc;
     static MapLocation teamHqLoc;
     static Team ourTeam;
-    
+
     Robot(RobotController rc) throws GameActionException {
-    	this.rc = rc;
-    	
-    	//Prevent the hq from trying to get it's own location
-    	if(rc.getType() != RobotType.HQ) {
-    		teamHqLoc = getHqLoc(rc.getBlock(1));
-    	}
-    	ourTeam = rc.getTeam();
+        this.rc = rc;
+
+        //Prevent the hq from trying to get it's own location
+        if(rc.getType() != RobotType.HQ) {
+            teamHqLoc = getHqLoc(rc.getBlock(1));
+        }
+        ourTeam = rc.getTeam();
     }
-    
+
     abstract void run(int turnCount) throws GameActionException;
 
     // Will give the nearest object given a list of MapLocations
@@ -51,7 +51,7 @@ public abstract class Robot {
         }
         return tempLocation;
     }
-    
+
     // Will give the nearest object of a given type(s)
     public static MapLocation findNearest(MapLocation currLoc, RobotInfo[] robotList, RobotType[] targetTypes, Team targetTeam) {
 
@@ -74,7 +74,7 @@ public abstract class Robot {
         }
         return tempLocation;
     }
-    
+
     // Will return a list of all directions in a 180 degree angle of the given direction
     public static Direction[] getFrontDirections(Direction aDirection) {
 
@@ -87,19 +87,19 @@ public abstract class Robot {
 
         return dirList;
     }
-	
+
     // Returns a random direction
     public static Direction randomDirection() {
         return directions[(int) (Math.random() * directions.length)];
     }
-    
+
     static boolean tryMove() throws GameActionException {
         for (Direction dir : Direction.values())
             if (tryMove(dir))
                 return true;
         return false;
     }
-    
+
     /**
      * Attempts to move in a given direction.
      *
@@ -129,7 +129,7 @@ public abstract class Robot {
             return true;
         } else return false;
     }
-    
+
     public static void tryBlockchain(int turnCount) throws GameActionException {
         if (turnCount < 3) {
             int[] message = new int[7];
@@ -141,5 +141,26 @@ public abstract class Robot {
         }
         // System.out.println(rc.getRoundMessages(turnCount-1));
     }
-	
+
+    public static RobotInfo checkForEnemies(int sensorRadius, RobotType type) {
+        RobotInfo[] robots = rc.senseNearbyRobots(sensorRadius, rc.getTeam().opponent());
+        if (robots.length > 0) {
+            for (RobotInfo bot : robots) {
+                if (bot.getType() == type) {
+                    return bot;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static MapLocation[] squaresAroundLoc(MapLocation hq) {
+        MapLocation[] surroundings = new MapLocation[8];
+        int index = 0;
+        for (Direction dir : directions) {
+            surroundings[index] = new MapLocation(hq.x+ dir.getDeltaX(), hq.y + dir.getDeltaY());
+            index++;
+        }
+        return surroundings;
+    }
 }

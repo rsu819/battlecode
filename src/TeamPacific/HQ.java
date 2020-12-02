@@ -1,14 +1,16 @@
 package TeamPacific;
+import TeamPacific.NetGun;
 import battlecode.common.*;
 import static TeamPacific.Blockchain.*;
 import static TeamPacific.RobotPlayer.enemyHq;
 
 
-public class HQ extends Robot {
+public class HQ extends NetGun {
 
     public static int minerCount;
     public static int numMiners;
     public static int maxMiner = 3;
+    public static int sensorRadius;
 
     public  HQ(RobotController rc) throws GameActionException {
         // TODO Auto-generated constructor stub
@@ -16,6 +18,7 @@ public class HQ extends Robot {
         minerCount = 0;
         numMiners = 0;
         maxMiner = 4;
+        sensorRadius = rc.getCurrentSensorRadiusSquared();
     }
 
     @Override
@@ -46,7 +49,8 @@ public class HQ extends Robot {
                 }
             }
             if (wallHeight >= 8) {
-                emitAttackMode(enemyHq);
+                System.out.println("attack!");
+                emitAttackMode();
             }
         }
 
@@ -58,24 +62,14 @@ public class HQ extends Robot {
         //for (Team c : Team.values()) TODO: if miners die make more?
         //System.out.println(c); TODO: optimize miner creation.
 
-        RobotInfo[] kills = findOpponents();
-        for (RobotInfo kill : kills) {
-            if (kill.getType() == RobotType.DELIVERY_DRONE) {
-                shoot(kill);
+        RobotInfo[] kills = findOpponents(sensorRadius);
+        if(kills != null) {
+            for (RobotInfo kill : kills) {
+                if (kill.getType() == RobotType.DELIVERY_DRONE) {
+                    shoot(kill);
+                }
             }
         }
-    }
-
-    public RobotInfo[] findOpponents(){
-        return rc.senseNearbyRobots(GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED, rc.getTeam().opponent());
-    }
-
-    public int shoot(RobotInfo kill) throws GameActionException {
-        int shot = 0;
-        if (rc.canShootUnit(kill.ID)) {
-            rc.shootUnit(kill.ID);
-        }
-        return shot;
     }
 
     public static boolean emitHqLocation() throws GameActionException{
@@ -89,10 +83,10 @@ public class HQ extends Robot {
         return false;
     }
 
-    public static void emitAttackMode(MapLocation enemyHq) throws GameActionException {
+    public static void emitAttackMode() throws GameActionException {
         int[] message;
         int cost = 10;
-        message = foundResourceMessage(enemyHq, MessageTo.Landscaper, Resource.EnemyHQ, true);
+        message = foundResourceMessage(new MapLocation(0, 0), MessageTo.Landscaper, Resource.EnemyHQ, true);
         if (rc.canSubmitTransaction(message, cost)) {
             rc.submitTransaction(message, cost);
         }

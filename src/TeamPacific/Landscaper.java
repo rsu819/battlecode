@@ -4,6 +4,7 @@
 
 package TeamPacific;
 
+import TeamPacific.Robot;
 import battlecode.common.*;
 import static TeamPacific.Blockchain.*;
 import static TeamPacific.RobotPlayer.*;
@@ -14,7 +15,7 @@ public class Landscaper extends Robot {
 	 */
 	
     // data members
-    static LandscaperTask currentState = null;
+    public static LandscaperTask currentState = null;
 
     public enum LandscaperTask{
         WALL_BUILDER,
@@ -28,14 +29,16 @@ public class Landscaper extends Robot {
     }
 
     @Override
-    void run(int turnCount) throws GameActionException {
+    public void run(int turnCount) throws GameActionException {
         // TODO Auto-generated method stub
-
-        if (rc.getRoundNum() % 10 == 1) {
+        int round = rc.getRoundNum();
+        if (round % 10 == 1) {
             Transaction[] block = rc.getBlock(rc.getRoundNum() - 1);
-            currentState = checkState(block);
+            currentState = checkBlockForState(block);
         }
-
+        if (round > 450) {
+            currentState = LandscaperTask.OFFENSE_UNIT;
+        }
         switch(currentState) {
             case OFFENSE_UNIT:
                 runOffenseUnit(turnCount);
@@ -50,7 +53,7 @@ public class Landscaper extends Robot {
         return awayFromBldg;
     }
 
-    static Direction[] findAdjacentDirs(Direction dir) {
+    public static Direction[] findAdjacentDirs(Direction dir) {
         Direction[] aroundBldg = new Direction[6];
         int index = 0;
         for (Direction d : Direction.allDirections()) {
@@ -90,13 +93,13 @@ public class Landscaper extends Robot {
     }
 
     // build general tasks / skills for the landscaper
-    static void runWallBuilder(int turnCount)  throws GameActionException {
+    public static void runWallBuilder(int turnCount)  throws GameActionException {
 
         MapLocation curr = rc.getLocation();
+        Direction dirToHq = curr.directionTo(teamHqLoc);
         Direction[] awayFromHq;
 
         if (teamHqLoc != null) {
-            Direction dirToHq = curr.directionTo(teamHqLoc);
             if (!curr.isAdjacentTo(teamHqLoc)) {
                 if (tryMove(dirToHq) == false) {
                     tryMove(dirToHq.rotateLeft());
@@ -104,7 +107,7 @@ public class Landscaper extends Robot {
                 }
             } else {
                 // if elevation at hq is getting buried, dig it out!
-                if (rc.senseNearbyRobots(8, rc.getTeam().opponent()).length > 0) {
+                if (checkForEnemies(8, RobotType.LANDSCAPER) != null) {
                     System.out.println("unbury hq");
                     tryDig(curr.directionTo(teamHqLoc));
                 }
@@ -113,34 +116,38 @@ public class Landscaper extends Robot {
                     tryDig(awayFromHq[turnCount % 3]);
                 }
                 else if (turnCount > 50 &&
-                        curr.directionTo(teamHqLoc) == Direction.EAST || curr.directionTo(teamHqLoc) == Direction.WEST) {
-                    buildWall(teamHqLoc, turnCount);
+                        dirToHq == Direction.EAST || dirToHq == Direction.WEST || dirToHq == Direction.NORTH || dirToHq == Direction.SOUTH) {
+                    if (compareElevation(rc.getLocation(), teamHqLoc) >= 3 && rc.getRoundNum() < 275) {
+                        System.out.println("waiting to build higher...");
+                    }
+                    else { buildWall(teamHqLoc, turnCount); }
+                }
+                else {
+                    tryMove(randomDirection());
                 }
             }
         }
-        tryMove(randomDirection());
     }
 
-    static void runOffenseUnit(int turnCount) throws GameActionException {
+    public static void runOffenseUnit(int turnCount) throws GameActionException {
         MapLocation curr = rc.getLocation();
 
         if (enemyHq == null){
             RobotInfo[] robots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), rc.getTeam().opponent());
             if (robots.length > 0) {
                 for (RobotInfo bot : robots) {
-                    if (bot.ID < 2) {
+                    if (bot.getType() == RobotType.HQ) {
                         enemyHq = bot.location;
-                        break;
+                        return;
                     }
                 }
             }
         }
-
-        if(!curr.isAdjacentTo(enemyHq)) {
+        else if(!curr.isAdjacentTo(enemyHq)) {
             tryMove(curr.directionTo(enemyHq));
         }
         // TODO: adjust logic for when to dig and when to bury enemy HQ
-        if (curr.isAdjacentTo(enemyHq) && (rc.getDirtCarrying() == RobotType.LANDSCAPER.dirtLimit)){
+        else if (curr.isAdjacentTo(enemyHq) && (rc.getDirtCarrying() == RobotType.LANDSCAPER.dirtLimit)){
             tryDepositDirt(curr.directionTo(enemyHq));
         } else {
             tryMove(curr.directionTo(enemyHq));
@@ -149,36 +156,7 @@ public class Landscaper extends Robot {
         tryDig(randomDirection());
     }
 
-    // TODO: activate other modes of landscaper action
-    static void runFloodPatrol(Landscaper patrol) throws GameActionException {
-
-        MapLocation curr = rc.getLocation();
-        Direction d = randomDirection();
-
-        if (!rc.senseFlooding(rc.adjacentLocation(d)) && rc.getDirtCarrying() != RobotType.LANDSCAPER.dirtLimit) {
-            patrol.tryDig(d);
-        }
-
-        else if (rc.senseFlooding(rc.adjacentLocation(d)) && curr.isWithinDistanceSquared(teamHqLoc, 18)) {
-            if (rc.getDirtCarrying() > 0) {
-                patrol.tryDepositDirt(d);
-            }
-            else
-                patrol.tryDig(randomDirection());
-        }
-
-        RobotInfo[] robots = rc.senseNearbyRobots(-1, rc.getTeam());
-        for (RobotInfo robot : robots) {
-            if (robot.type == RobotType.HQ) {
-                tryMove(curr.directionTo(robot.location));
-            }
-        }
-    }
-
-
-
-
-    public static LandscaperTask checkState(Transaction[] txns) throws GameActionException {
+    public static LandscaperTask checkBlockForState(Transaction[] txns) throws GameActionException {
 
         for (Transaction txn : txns) {
             int[] message = txn.getMessage();
@@ -188,5 +166,12 @@ public class Landscaper extends Robot {
             }
         }
         return LandscaperTask.WALL_BUILDER;
+    }
+
+    public static int compareElevation(MapLocation one, MapLocation two) throws GameActionException {
+        if (rc.canSenseLocation(one) && rc.canSenseLocation(two)) {
+            return Math.abs(rc.senseElevation(one) - rc.senseElevation(two));
+        }
+        return -1;
     }
 }

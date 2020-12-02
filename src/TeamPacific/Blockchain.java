@@ -2,8 +2,6 @@ package TeamPacific;
 
 import battlecode.common.*;
 
-import java.util.*;
-
 import static TeamPacific.RobotPlayer.rc;
 
 // class methods for RobotController to use Blockchain.
@@ -71,7 +69,7 @@ public class Blockchain {
     public static boolean emitEnemyHq(MapLocation enemy) throws GameActionException{
         int[] message;
         int cost = 10;
-        message = foundResourceMessage(enemy, MessageTo.Any, Resource.EnemyHQ, false);
+        message = foundResourceMessage(enemy, MessageTo.Drone, Resource.EnemyHQ, false);
         if (rc.canSubmitTransaction(message, cost)){
             rc.submitTransaction(message, cost);
             return true;

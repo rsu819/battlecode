@@ -6,7 +6,6 @@ import battlecode.common.*;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.scalactic.Or;
 
 import static TeamPacific.Landscaper.tryDig;
 import static org.mockito.Mockito.*;
@@ -103,7 +102,7 @@ public class landscaperTest {
     @Test
     public void testCheckMessage() throws GameActionException {
         when(mockRC1.getBlock(10)).thenReturn(block1);
-        Landscaper.LandscaperTask actualState = Landscaper.checkState(block1);
+        Landscaper.LandscaperTask actualState = Landscaper.checkBlockForState(block1);
 
         Assert.assertEquals(Landscaper.LandscaperTask.OFFENSE_UNIT, actualState);
     }
